@@ -1,15 +1,9 @@
-"""Train Prototype's neural language model from the whole training-data folder.
-
-By default, every .txt file under data/training/ is loaded recursively and
-combined into one training corpus. Add new lessons by dropping UTF-8 .txt files
-into that folder; no code changes are required.
-
-This script does not download or silently import an external pretrained model.
-"""
+"""Train Prototype's causal Transformer on the complete training curriculum."""
 
 from __future__ import annotations
 
 import argparse
+import random
 from pathlib import Path
 
 import torch
@@ -28,138 +22,179 @@ def load_training_folder(data_dir: Path) -> tuple[str, list[Path]]:
     if not files:
         raise ValueError(f"no .txt training files found in {data_dir}")
 
-    parts: list[str] = []
-    for path in files:
-        parts.append(path.read_text(encoding="utf-8").strip())
-
+    parts = [path.read_text(encoding="utf-8").strip() for path in files]
     text = "\n\n".join(part for part in parts if part)
     if not text:
         raise ValueError(f"training files in {data_dir} are empty")
-
     return text, files
 
 
-def make_examples(token_ids: list[int], context_size: int) -> tuple[torch.Tensor, torch.Tensor]:
-    """Create (context, next_token) training examples from token IDs."""
+def make_windows(
+    token_ids: list[int],
+    context_size: int,
+    stride: int = 1,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Create sequence inputs and next-token targets."""
     if len(token_ids) <= context_size:
         raise ValueError("training text is too short for the chosen context size")
 
-    contexts = []
+    inputs = []
     targets = []
+    for start in range(0, len(token_ids) - context_size, stride):
+        inputs.append(token_ids[start:start + context_size])
+        targets.append(token_ids[start + 1:start + context_size + 1])
 
-    for index in range(context_size, len(token_ids)):
-        contexts.append(token_ids[index - context_size:index])
-        targets.append(token_ids[index])
+    return (
+        torch.tensor(inputs, dtype=torch.long),
+        torch.tensor(targets, dtype=torch.long),
+    )
 
-    return torch.tensor(contexts, dtype=torch.long), torch.tensor(targets, dtype=torch.long)
+
+def split_data(
+    inputs: torch.Tensor,
+    targets: torch.Tensor,
+    validation_fraction: float = 0.1,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Split chronologically so validation text stays unseen during training."""
+    if not 0 < validation_fraction < 1:
+        raise ValueError("validation_fraction must be between 0 and 1")
+
+    split = max(1, int(len(inputs) * (1.0 - validation_fraction)))
+    split = min(split, len(inputs) - 1)
+    return inputs[:split], targets[:split], inputs[split:], targets[split:]
 
 
-def train(
+def run_epoch(
     model: PrototypeLanguageModel,
     inputs: torch.Tensor,
     targets: torch.Tensor,
-    epochs: int = 100,
-    learning_rate: float = 0.001,
-) -> list[float]:
-    """Train the model and return the loss after each epoch."""
-    if epochs < 1:
-        raise ValueError("epochs must be positive")
+    optimizer: torch.optim.Optimizer | None,
+    batch_size: int,
+    device: torch.device,
+) -> float:
+    training = optimizer is not None
+    model.train(training)
+    order = list(range(len(inputs)))
+    if training:
+        random.shuffle(order)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-    loss_function = nn.CrossEntropyLoss()
-    history: list[float] = []
+    total_loss = 0.0
+    total_tokens = 0
 
-    model.train()
+    for start in range(0, len(order), batch_size):
+        batch_indices = order[start:start + batch_size]
+        x = inputs[batch_indices].to(device)
+        y = targets[batch_indices].to(device)
 
-    for epoch in range(1, epochs + 1):
-        optimizer.zero_grad()
+        if training:
+            optimizer.zero_grad(set_to_none=True)
 
-        logits = model(inputs)
-        loss = loss_function(logits, targets)
+        logits = model(x)
+        loss = nn.functional.cross_entropy(
+            logits.reshape(-1, model.vocab_size),
+            y.reshape(-1),
+        )
 
-        loss.backward()
-        optimizer.step()
+        if training:
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            optimizer.step()
 
-        value = float(loss.item())
-        history.append(value)
+        token_count = y.numel()
+        total_loss += float(loss.item()) * token_count
+        total_tokens += token_count
 
-        if epoch == 1 or epoch % 10 == 0 or epoch == epochs:
-            print(f"epoch {epoch:4d} | loss {value:.4f}")
-
-    return history
+    return total_loss / max(1, total_tokens)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Train Prototype from every .txt file in data/training/."
     )
-    parser.add_argument(
-        "--data-dir",
-        type=Path,
-        default=Path("data/training"),
-        help="directory containing training .txt files (default: data/training)",
-    )
-    parser.add_argument(
-        "--epochs",
-        type=int,
-        default=100,
-    )
-    parser.add_argument(
-        "--learning-rate",
-        type=float,
-        default=0.001,
-    )
-    parser.add_argument(
-        "--context-size",
-        type=int,
-        default=8,
-    )
-    parser.add_argument(
-        "--checkpoint",
-        type=Path,
-        default=Path("prototype_model.pt"),
-    )
+    parser.add_argument("--data-dir", type=Path, default=Path("data/training"))
+    parser.add_argument("--epochs", type=int, default=10)
+    parser.add_argument("--learning-rate", type=float, default=3e-4)
+    parser.add_argument("--context-size", type=int, default=128)
+    parser.add_argument("--batch-size", type=int, default=8)
+    parser.add_argument("--validation-fraction", type=float, default=0.1)
+    parser.add_argument("--vocab-limit", type=int, default=8192)
+    parser.add_argument("--checkpoint", type=Path, default=Path("prototype_model.pt"))
     args = parser.parse_args()
 
-    text, files = load_training_folder(args.data_dir)
+    if args.context_size < 8:
+        raise ValueError("context-size should be at least 8")
+    if args.batch_size < 1:
+        raise ValueError("batch-size must be positive")
 
+    text, files = load_training_folder(args.data_dir)
     print(f"loaded {len(files)} training file(s):")
     for path in files:
         print(f"  - {path}")
 
-    tokenizer = Tokenizer()
+    tokenizer = Tokenizer(vocab_limit=args.vocab_limit)
     tokenizer.learn(text)
     tokenizer.save()
 
-    token_ids = tokenizer.encode(text, add_bos=True, add_eos=True)
-    inputs, targets = make_examples(token_ids, args.context_size)
+    token_ids = tokenizer.encode(text, add_boundaries=True)
+    inputs, targets = make_windows(token_ids, args.context_size)
+    train_x, train_y, val_x, val_y = split_data(inputs, targets, args.validation_fraction)
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"vocabulary: {tokenizer.vocabulary_size}")
+    print(f"tokens: {len(token_ids)} | device: {device}")
 
     model = PrototypeLanguageModel(
         vocab_size=tokenizer.vocabulary_size,
         context_size=args.context_size,
+    ).to(device)
+
+    optimizer = torch.optim.AdamW(
+        model.parameters(),
+        lr=args.learning_rate,
+        weight_decay=0.01,
     )
 
-    history = train(
-        model,
-        inputs,
-        targets,
-        epochs=args.epochs,
-        learning_rate=args.learning_rate,
-    )
+    best_val = float("inf")
+    history: list[dict[str, float]] = []
 
-    torch.save(
-        {
-            "model_state_dict": model.state_dict(),
-            "vocab_size": tokenizer.vocabulary_size,
-            "context_size": args.context_size,
-            "embedding_size": model.embedding_size,
-            "hidden_size": model.hidden_size,
-            "final_loss": history[-1],
-            "training_files": [str(path) for path in files],
-        },
-        args.checkpoint,
-    )
+    for epoch in range(1, args.epochs + 1):
+        train_loss = run_epoch(
+            model, train_x, train_y, optimizer, args.batch_size, device
+        )
+        with torch.no_grad():
+            val_loss = run_epoch(
+                model, val_x, val_y, None, args.batch_size, device
+            )
 
+        history.append({"train_loss": train_loss, "validation_loss": val_loss})
+        print(
+            f"epoch {epoch:3d} | train loss {train_loss:.4f} | "
+            f"validation loss {val_loss:.4f}"
+        )
+
+        if val_loss < best_val:
+            best_val = val_loss
+            torch.save(
+                {
+                    "format_version": 2,
+                    "model_state_dict": model.state_dict(),
+                    "optimizer_state_dict": optimizer.state_dict(),
+                    "vocab_size": tokenizer.vocabulary_size,
+                    "context_size": args.context_size,
+                    "embedding_size": model.embedding_size,
+                    "hidden_size": model.hidden_size,
+                    "num_layers": model.num_layers,
+                    "num_heads": model.num_heads,
+                    "dropout": model.dropout,
+                    "vocab_limit": args.vocab_limit,
+                    "best_validation_loss": best_val,
+                    "training_files": [str(path) for path in files],
+                    "history": history,
+                },
+                args.checkpoint,
+            )
+
+    print(f"best validation loss: {best_val:.4f}")
     print(f"saved checkpoint to {args.checkpoint}")
 
 
