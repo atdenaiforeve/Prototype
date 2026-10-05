@@ -1,0 +1,89 @@
+Weather describes the short-term state of the atmosphere at a particular place and time.
+Climate describes long-term patterns and averages of weather in a region.
+Weather can change over minutes, hours, or days.
+Climate is usually studied over many years or longer periods.
+The atmosphere is a mixture of gases surrounding Earth.
+Air pressure is the force exerted by air over an area.
+Air pressure generally decreases as altitude increases.
+Temperature describes how hot or cold something is.
+Humidity describes the amount of water vapor in the air.
+Relative humidity compares the amount of water vapor in air with the amount it could hold at that temperature.
+Dew point is the temperature to which air must be cooled for saturation to occur at constant pressure.
+Clouds form when moist air cools enough for water vapor to condense or deposit into tiny particles.
+Cloud droplets and ice crystals can form around microscopic particles called condensation nuclei or ice-nucleating particles.
+Cirrus clouds are generally high, thin clouds made mostly of ice crystals.
+Cumulus clouds often appear as puffy clouds with strong vertical development possible.
+Stratus clouds form broad, layered cloud sheets.
+Cumulonimbus clouds can produce thunderstorms, heavy rain, hail, strong winds, and sometimes tornadoes.
+Precipitation is water that falls from clouds to Earth's surface.
+Rain is liquid precipitation.
+Snow consists of ice crystals that fall from clouds.
+Sleet is a term used for different types of frozen precipitation depending on region; in some places it means small ice pellets.
+Hail consists of layered balls or irregular pieces of ice produced in strong thunderstorms.
+Fog is a cloud at or very near Earth's surface.
+Wind is moving air.
+Air moves because of differences in pressure, with other forces and Earth's rotation affecting its movement.
+A pressure gradient is a change in pressure across distance and helps drive wind.
+The Coriolis effect results from Earth's rotation and influences the direction of moving air and water on a rotating planet.
+Sea breezes can develop because land and water heat at different rates.
+Land breezes can develop when cooling patterns reverse the local temperature contrast.
+Global atmospheric circulation moves heat and moisture around the planet.
+The equator receives more direct average solar energy than the poles.
+Unequal heating helps drive large-scale atmospheric circulation.
+Jet streams are relatively narrow bands of strong winds high in the atmosphere.
+The water cycle connects evaporation, condensation, precipitation, runoff, infiltration, and other water movements.
+Evaporation transfers liquid water into the atmosphere as water vapor.
+Transpiration transfers water vapor from plants into the atmosphere.
+Evapotranspiration combines evaporation and transpiration.
+Condensation changes water vapor into liquid water.
+Precipitation returns water from the atmosphere to Earth's surface.
+Runoff is water flowing over land toward streams, rivers, lakes, or oceans.
+Infiltration is water entering soil or porous ground.
+Weather fronts are boundaries between air masses with different properties.
+A cold front occurs when colder air advances and can lift warmer air.
+A warm front occurs when warmer air advances over colder air.
+An occluded front can form when one front catches up with another.
+A stationary front occurs when a boundary between air masses moves little.
+Air masses are large bodies of air with relatively uniform temperature and moisture characteristics.
+Thunderstorms form when warm, moist, unstable air rises and produces strong convection.
+Lightning is a large electrical discharge in the atmosphere.
+Thunder is the sound produced by rapid heating and expansion of air around lightning.
+Severe thunderstorms can produce damaging winds, large hail, frequent lightning, and other hazards.
+Tornadoes are rapidly rotating columns of air associated with some thunderstorms.
+Tropical cyclones are large rotating storm systems that form over sufficiently warm ocean water under suitable conditions.
+A tropical cyclone can be called a hurricane, typhoon, or cyclone depending on its region.
+Tropical cyclones can bring strong winds, heavy rainfall, and dangerous coastal flooding.
+Storm surge is an abnormal rise of seawater associated with a storm's winds and pressure.
+Flooding occurs when water covers land that is normally dry.
+Drought is an extended period of unusually low water availability relative to normal conditions.
+Heatwaves are periods of unusually hot weather for a location and season.
+Cold waves are periods of unusually cold weather for a location and season.
+Bushfires and wildfires are influenced by weather, vegetation, fuel moisture, and human or natural ignition.
+Climate is influenced by incoming solar energy, Earth's surface, atmosphere, oceans, ice, vegetation, and other factors.
+The greenhouse effect is a natural process in which certain atmospheric gases absorb and re-emit infrared radiation.
+Greenhouse gases include carbon dioxide, methane, nitrous oxide, and water vapor.
+Human activities have increased atmospheric concentrations of several long-lived greenhouse gases.
+Increasing greenhouse gas concentrations can increase Earth's energy imbalance and warm the climate system.
+Climate change can alter temperature patterns, precipitation, sea level, ice, ecosystems, and the frequency or intensity of some extremes.
+Climate variability refers to natural changes in climate over different timescales.
+El Niño and La Niña are phases of the El Niño-Southern Oscillation that can influence weather patterns around the world.
+Ocean currents transport heat and influence regional climates.
+The ocean stores and redistributes large amounts of heat.
+Sea ice is frozen seawater, while glaciers are land-based ice.
+Melting land ice contributes to sea-level rise.
+Thermal expansion of seawater also contributes to sea-level rise as oceans warm.
+Climate models use mathematical representations of physical processes to study and project climate behavior.
+Weather forecasts use observations and computer models to predict likely atmospheric conditions.
+Weather observations can come from ground stations, weather balloons, aircraft, ships, buoys, radar, and satellites.
+Radar can help detect precipitation and track storms.
+Satellites can observe clouds, atmospheric conditions, oceans, land, and weather systems.
+Meteorology is the scientific study of the atmosphere and weather.
+Climatology is the study of climate and its patterns and changes.
+A forecast is a prediction about future weather conditions based on observations and models.
+Forecast uncertainty exists because the atmosphere is complex and measurements and models have limitations.
+The atmosphere is a chaotic system, so small differences in initial conditions can affect later weather predictions.
+A weather warning communicates that dangerous conditions are occurring or expected.
+Weather services use observations and forecasts to issue warnings for hazards.
+Australia experiences many climate zones, from tropical conditions in the north to temperate and arid regions farther south and inland.
+Western Australia includes tropical, arid, semi-arid, Mediterranean, and other climate influences across its large area.
+Perth has a Mediterranean-type climate with hot, dry summers and mild, wetter winters.
