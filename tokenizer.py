@@ -68,7 +68,7 @@ class Tokenizer:
         for word in words:
             if not word:
                 continue
-            sequences[tuple(word)] += 1
+            sequences[tuple(WORD_BOUNDARY + word)] += 1
         return sequences
 
     @staticmethod
