@@ -1,0 +1,119 @@
+Matter is anything that has mass and occupies space.
+Matter is made from particles.
+Atoms are basic units of ordinary matter.
+An atom contains a nucleus surrounded by electrons.
+The nucleus contains protons and neutrons.
+Protons have positive electric charge.
+Electrons have negative electric charge.
+Neutrons have no net electric charge.
+The number of protons in an atom determines which chemical element it is.
+An element is a substance made of atoms with the same number of protons.
+The periodic table organizes chemical elements by atomic number and recurring properties.
+Hydrogen is the simplest element.
+Oxygen is an element important to many biological and chemical processes.
+Carbon is an element that forms the backbone of many molecules in living organisms.
+Iron, copper, gold, silicon, and many other substances are elements.
+Isotopes are forms of an element with the same number of protons but different numbers of neutrons.
+Atoms can gain or lose electrons and become ions.
+A molecule is a group of atoms held together by chemical bonds.
+A compound contains atoms of two or more different elements chemically bonded together.
+Water is a compound made from hydrogen and oxygen.
+Carbon dioxide is a compound made from carbon and oxygen.
+Chemical bonds hold atoms together in molecules and compounds.
+Ionic bonds involve attraction between oppositely charged ions.
+Covalent bonds involve atoms sharing electrons.
+Metallic bonding occurs in metals and involves shared electrons throughout a structure.
+Matter commonly exists as solids, liquids, gases, and plasma.
+A solid has a definite shape and volume under ordinary conditions.
+A liquid has a definite volume but takes the shape of its container.
+A gas has neither a fixed shape nor a fixed volume.
+Plasma is an energized state of matter containing charged particles and is common in stars.
+Particles in solids generally vibrate around relatively fixed positions.
+Particles in liquids can move past one another while remaining relatively close together.
+Particles in gases are generally much farther apart and move freely.
+Temperature is related to the average kinetic energy of particles in a substance.
+Heating a substance can increase particle motion.
+Cooling a substance can decrease particle motion.
+Melting changes a solid into a liquid.
+Freezing changes a liquid into a solid.
+Evaporation changes liquid into gas at a surface.
+Boiling changes a liquid into gas throughout the liquid when suitable conditions are reached.
+Condensation changes gas into liquid.
+Sublimation changes a solid directly into a gas.
+Deposition changes a gas directly into a solid.
+Physical changes alter a substance's form without changing its chemical identity.
+Chemical changes produce new substances with different chemical compositions.
+Rusting is a chemical process involving iron and oxygen and often water.
+Combustion is a chemical reaction that releases energy, often involving oxygen.
+Chemical reactions rearrange atoms and change how they are bonded.
+Reactants are substances present at the start of a chemical reaction.
+Products are substances formed by a chemical reaction.
+The law of conservation of mass states that mass is conserved in ordinary chemical reactions in a closed system.
+Energy is the capacity to cause change or do work.
+Energy can be transferred between objects or transformed from one form to another.
+Kinetic energy is energy associated with motion.
+Potential energy is stored energy associated with position, arrangement, or other conditions.
+Gravitational potential energy depends on position in a gravitational field.
+Elastic potential energy can be stored when an elastic object is stretched or compressed.
+Thermal energy is associated with microscopic motion and interactions of particles.
+Chemical energy is associated with chemical bonds and molecular arrangements.
+Electrical energy involves electric charges and electric fields.
+Radiant energy is carried by electromagnetic radiation such as light.
+Nuclear energy is associated with changes in atomic nuclei.
+Energy is conserved overall, although it can change form or move between systems.
+Power is the rate at which energy is transferred or work is done.
+The watt is a unit of power.
+The joule is a unit of energy.
+Temperature can be measured using scales such as Celsius, Fahrenheit, and Kelvin.
+The Kelvin scale begins at absolute zero.
+Absolute zero is the theoretical lowest possible temperature.
+Heat is energy transferred because of a temperature difference.
+Thermal conduction transfers energy through direct interactions between particles.
+Convection transfers thermal energy through the movement of fluids.
+Radiation transfers energy through electromagnetic waves and does not require matter between the source and receiver.
+Metals often conduct heat and electricity effectively.
+Insulators resist the flow of heat or electric charge more strongly than conductors.
+Electric current is the flow of electric charge.
+Voltage is a difference in electric potential that can drive current.
+Resistance describes opposition to electric current.
+Ohm's law relates voltage, current, and resistance in many electrical circuits.
+A circuit provides a path through which electric charge can move.
+Batteries can provide electrical energy by chemical reactions.
+Magnets produce magnetic fields.
+Electric currents can produce magnetic fields.
+Changing magnetic fields can induce electric currents.
+Electricity and magnetism are connected aspects of electromagnetism.
+Light is electromagnetic radiation.
+Electromagnetic radiation can travel through a vacuum.
+The electromagnetic spectrum includes radio waves, microwaves, infrared, visible light, ultraviolet, X-rays, and gamma rays.
+Different wavelengths and frequencies correspond to different parts of the electromagnetic spectrum.
+Visible light is only a small part of the electromagnetic spectrum.
+Reflection occurs when waves or light bounce from a surface.
+Refraction is the change in direction of a wave when it enters a different medium.
+Diffraction is the spreading or bending of waves around obstacles or through openings.
+Sound is a mechanical wave that requires a medium such as air, water, or a solid.
+Sound generally travels faster through solids than through gases.
+Frequency is the number of repeating cycles per unit time.
+Hertz is the unit used for frequency.
+Amplitude describes the size of an oscillation and can relate to the energy carried by a wave.
+Wavelength is the distance between corresponding points on successive waves.
+Force is an interaction that can change an object's motion.
+Newton is the SI unit of force.
+Newton's second law relates net force, mass, and acceleration.
+Acceleration is a change in velocity over time.
+Velocity describes speed with direction.
+Mass measures an object's inertia and is related to the amount of matter in an object.
+Weight is the force of gravity acting on an object.
+Friction is a force that resists relative motion between surfaces or through fluids.
+Gravity causes objects near Earth to accelerate toward Earth's center when not otherwise supported.
+Momentum depends on an object's mass and velocity.
+A simple machine can make it easier to apply force or change its direction.
+Examples of simple machines include levers, pulleys, wheels and axles, inclined planes, wedges, and screws.
+Work in physics is energy transferred when a force causes displacement in the direction of the force.
+Machines can transfer force and energy, but real machines lose some useful energy, often as thermal energy.
+Density is mass divided by volume.
+Objects can float or sink depending on density and the forces acting on them.
+Pressure is force distributed over an area.
+Fluid pressure can change with depth.
+Matter and energy are central concepts in physics, chemistry, Earth science, biology, and engineering.
+Scientists study matter and energy using measurements, experiments, mathematical models, and observations.
