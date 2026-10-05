@@ -1,0 +1,108 @@
+Artificial intelligence, or AI, is a field of computer science concerned with building systems that can perform tasks that normally require aspects of intelligence.
+AI systems can process information, recognize patterns, make predictions, generate content, solve problems, or control actions.
+AI is a broad field and not every AI system learns in the same way.
+Machine learning is a subset of AI in which algorithms learn patterns from data and use those patterns to make predictions or decisions.
+Deep learning is a branch of machine learning based on neural networks with multiple layers.
+A neural network is a machine learning model made from connected computational units arranged in layers.
+A neural network commonly has an input layer, hidden layers, and an output layer.
+Weights control how strongly information affects calculations in a neural network.
+Biases help shift the calculations made by neurons.
+Training changes model parameters such as weights and biases so that the model performs better on its training objective.
+Training data provides examples from which a model can learn.
+A model is the learned computational system that uses its parameters to produce outputs.
+An inference is the process of using a trained model to produce an output from an input.
+Supervised learning uses training examples that include target answers or labels.
+Unsupervised learning looks for patterns or structures in data without requiring every example to have a target label.
+Reinforcement learning trains an agent using feedback such as rewards or penalties.
+A dataset is a collection of data used for training, validation, testing, or analysis.
+Training data should be relevant to the task a model is expected to perform.
+Validation data can be used to monitor performance during development.
+Test data can be kept separate to evaluate how well a model handles unseen examples.
+Overfitting happens when a model learns training examples too specifically and performs poorly on new examples.
+Underfitting happens when a model is too simple to capture important patterns in the data.
+A loss function measures how far a model's predictions are from desired targets for a training objective.
+An optimizer changes model parameters to reduce the loss.
+A learning rate controls how large parameter updates are during optimization.
+Backpropagation calculates how changes in model parameters affect the training loss and is used to update neural networks.
+Gradient descent is an optimization method that uses gradients to move parameters toward lower loss.
+An epoch is one complete pass through a training dataset.
+A batch is a group of training examples processed together.
+A token is a piece of text represented for a language model, such as a word, part of a word, or punctuation.
+A tokenizer converts text into tokens or token IDs that a model can process.
+A vocabulary is a collection of tokens known to a tokenizer or language model.
+A token ID is a numerical identifier representing a token.
+A language model learns patterns in sequences of tokens.
+A next-token language model predicts what token is likely to come next based on previous tokens.
+A language model can generate text by repeatedly predicting and selecting the next token.
+Context is the information available to a model when producing a prediction.
+A context window is the amount of previous information a model can process for a prediction.
+Embeddings represent tokens or other objects as numerical vectors.
+An embedding can represent useful relationships between items in a learned vector space.
+Attention is a mechanism that allows a model to weigh different parts of its input when producing a representation or prediction.
+Self-attention allows tokens in a sequence to consider relationships with other tokens in the same sequence.
+A transformer is a neural network architecture that uses attention and feed-forward components and is widely used for language models.
+Generative AI refers to AI systems that generate new content such as text, images, audio, video, or code.
+Natural language processing, or NLP, is the area of AI concerned with human language.
+Computer vision is the area of AI concerned with interpreting visual information.
+Speech and audio AI can process or generate spoken language and other sounds.
+Robotics combines AI with sensors, control systems, and physical machines.
+AI can be used for classification, where an input is assigned to a category.
+AI can be used for regression, where a model predicts a numerical value.
+AI can be used for recommendation, where a system predicts useful items or actions for a user.
+AI can be used for detection, where a system identifies objects, events, or patterns.
+AI can be used for generation, where a system creates new content.
+AI does not automatically understand information in the same way a human does.
+A model can produce an answer without having human-like consciousness or understanding.
+AI models can make mistakes.
+AI outputs should be evaluated rather than automatically assumed to be correct.
+Training data can contain errors, gaps, or biases.
+A model can reproduce patterns or biases present in its training data.
+Good AI development includes testing, evaluation, monitoring, and careful consideration of limitations.
+AI safety includes designing systems to reduce harmful or unreliable behavior.
+AI ethics includes considering fairness, privacy, accountability, transparency, and the effects of AI systems on people.
+A model's capabilities depend on its architecture, parameters, training data, training process, and how it is used.
+Larger models are not automatically better for every task.
+More training data is not automatically better if the data is low quality or irrelevant.
+High-quality examples can be more useful than large amounts of noisy data.
+A small model can be useful when its task is narrow and well defined.
+AI systems can combine learned models with databases, tools, memory systems, or rules.
+A memory system can store information outside the model's neural weights.
+Retrieval can provide relevant stored information to a model at the time it is needed.
+A tool-using AI system can call external software or functions to perform tasks.
+An AI agent is a system that can use models, tools, memory, and decision processes to pursue a goal.
+A rule-based AI system uses explicitly written rules instead of learning every behavior from examples.
+Search algorithms can explore possible actions or solutions to find useful results.
+Planning systems can select sequences of actions to reach a goal.
+AI systems can use both learned behavior and explicitly programmed logic.
+Code is a set of instructions written in a programming language.
+Python is a programming language commonly used for AI and machine learning.
+A Python program can load data, transform data, create a model, train a model, evaluate a model, and save a model.
+Libraries can provide reusable implementations of mathematical operations, neural networks, data processing, and optimization.
+PyTorch is a software framework that can be used to build and train neural networks.
+A tensor is a multidimensional numerical data structure commonly used in machine learning software.
+A checkpoint is a saved state of a model and often includes learned parameters and training information.
+Saving checkpoints allows training to be resumed or models to be compared.
+Evaluation measures how well a model performs on defined tasks.
+Accuracy measures the proportion of correct predictions for some classification tasks.
+Precision and recall are metrics that can provide more detailed information about classification performance.
+A benchmark is a defined task or collection of tasks used to compare model performance.
+A model should be evaluated on examples that were not simply copied from its training examples.
+Data preprocessing transforms raw data into a form suitable for training or evaluation.
+Data cleaning can remove or correct unsuitable training examples.
+Data splitting helps separate training, validation, and test examples.
+Shuffling training data can reduce unwanted ordering effects during training.
+Randomness can affect training and generation, so reproducibility can be useful when debugging.
+AI research includes many different architectures, algorithms, datasets, and training methods.
+There is no single algorithm that is best for every AI problem.
+Different AI tasks require different representations, objectives, data, and evaluation methods.
+A language model's behavior comes from the patterns encoded in its learned parameters together with its input and any external systems connected to it.
+Prototype is an experimental language model project built from scratch rather than using a pretrained language model as its core model.
+Prototype currently uses a tokenizer, vocabulary, a small neural language model, a training loop, and a persistent memory engine.
+Prototype's current neural model is a small feed-forward next-token model with a fixed context size.
+Prototype's training system reads text files from the data/training folder and uses them as training material.
+Adding text to a training folder does not change model weights until the training process is run.
+During Prototype training, text is tokenized, training examples are created, predictions are made, loss is calculated, gradients are computed, and model parameters are updated.
+Prototype can later be improved with positional information, self-attention, transformer blocks, stronger language-model components, better datasets, validation, evaluation, generation controls, and conversation formatting.
+Prototype's memory engine is separate from its neural weights and can store persistent information in a database.
+A model's learned weights and an external memory database are different kinds of stored information.
+A useful AI system can combine a trained model with memory, retrieval, tools, and carefully designed software.
