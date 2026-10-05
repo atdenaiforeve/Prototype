@@ -1,0 +1,114 @@
+Language is a system humans use to communicate meaning through sounds, signs, symbols, or writing.
+A language can communicate facts, questions, requests, feelings, ideas, stories, and relationships.
+A speaker or writer chooses words and structures based on context, purpose, audience, and language conventions.
+A listener or reader interprets language using words, grammar, context, background knowledge, and expectations.
+A word is a unit of language that can carry meaning or perform a grammatical function.
+A sentence is a grammatical unit that usually expresses a complete thought in standard written English.
+A phrase is a group of words that functions together but does not necessarily contain a complete subject-predicate structure.
+A clause contains a subject and a predicate and can be independent or dependent.
+A subject is the person, thing, or idea that a clause is about or that performs an action in many sentence structures.
+A predicate contains the verb and information about the subject.
+A noun commonly names a person, place, thing, animal, or idea.
+A pronoun can stand in for a noun or noun phrase.
+A verb expresses an action, occurrence, or state.
+An adjective modifies or describes a noun or pronoun.
+An adverb can modify a verb, adjective, another adverb, or an entire clause.
+A preposition expresses relationships such as location, direction, time, or connection.
+A conjunction connects words, phrases, or clauses.
+An interjection can express a sudden feeling or reaction.
+A determiner helps specify a noun, as in words such as the, a, an, this, or some.
+Grammar is the system of patterns and rules used to form and interpret expressions in a language.
+Syntax concerns how words and phrases are arranged.
+Semantics concerns meaning.
+Pragmatics concerns how meaning depends on context and use.
+Morphology studies the internal structure and formation of words.
+Phonetics studies speech sounds as physical phenomena.
+Phonology studies how sounds function within a particular language.
+A morpheme is a meaningful unit in a word.
+A prefix is a morpheme added to the beginning of a word.
+A suffix is a morpheme added to the end of a word.
+Inflection changes grammatical information without normally creating a completely new dictionary word, such as plural or tense marking.
+Derivation can create a new word or change its grammatical category.
+Singular commonly refers to one.
+Plural commonly refers to more than one.
+Tense helps locate an event in time, with English commonly using past, present, and future constructions.
+Aspect describes how an event unfolds, such as whether it is ongoing or completed.
+Voice can describe whether a clause is active or passive.
+An active sentence often places the agent before the verb.
+A passive sentence often places the affected participant before a form of be plus a past participle.
+Subject-verb agreement means grammatical forms should agree in relevant features such as number in standard English.
+Pronouns can have person, number, and case distinctions.
+First person refers to the speaker or writer.
+Second person refers to the person or people being addressed.
+Third person refers to other people, things, or ideas.
+A declarative sentence normally makes a statement.
+An interrogative sentence asks a question.
+An imperative sentence gives a command or instruction.
+An exclamatory sentence expresses strong emotion in a conventional grammatical form.
+Punctuation helps readers interpret written language.
+A period commonly marks the end of a declarative sentence.
+A question mark commonly marks a direct question.
+An exclamation mark can indicate emphasis or strong emotion.
+A comma can separate items, phrases, clauses, or introductory material depending on sentence structure.
+An apostrophe can mark possession or omitted letters in contractions.
+Quotation marks can indicate direct quotations or certain titles depending on a style guide.
+Capitalization marks the beginning of sentences and proper names and follows language conventions.
+A paragraph is a group of related sentences organized around a central idea or purpose.
+A topic sentence often introduces the main idea of a paragraph.
+Coherence means ideas connect in a way that is understandable.
+Cohesion means linguistic devices help connect parts of a text.
+A text can have a purpose such as informing, explaining, persuading, entertaining, instructing, or telling a story.
+A fact is a claim that can in principle be checked against evidence.
+An opinion expresses a belief, judgment, preference, or evaluation.
+A claim is a statement presented as true or proposed for consideration.
+Evidence is information used to support or evaluate a claim.
+A source is something that provides information or evidence.
+A reliable explanation should distinguish known facts from uncertainty or speculation.
+A definition states the meaning or scope of a term.
+An example demonstrates how a concept can work in a particular case.
+An analogy compares two things to help explain a relationship, but an analogy is not automatically proof that the things are identical.
+A summary states the main ideas of a text without reproducing every detail.
+A paraphrase restates an idea in different wording while preserving its meaning.
+A quotation reproduces another speaker's or writer's exact words and should be attributed appropriately.
+A narrative tells events or describes experiences, often involving characters, setting, sequence, and change.
+A character is a person, animal, or other entity that participates in a story.
+A setting describes where and when a story takes place.
+A plot is the sequence and relationship of events in a narrative.
+Dialogue represents interaction between speakers.
+Tone is the attitude or emotional quality conveyed by language.
+Register is the style of language appropriate to a particular situation or audience.
+Formal language is often used in academic, professional, or official contexts.
+Informal language is common in casual conversation and friendly communication.
+Slang is highly informal vocabulary associated with particular groups, places, or contexts.
+Idioms are expressions whose conventional meaning cannot always be inferred directly from their individual words.
+Metaphor describes one thing in terms of another to create an implied comparison.
+Simile explicitly compares things using words such as like or as.
+Personification gives human characteristics to nonhuman things in figurative language.
+Hyperbole is deliberate exaggeration used for emphasis or effect.
+Irony involves a contrast between expected and actual meaning or circumstances; its precise type depends on context.
+Synonyms are words with similar meanings, although they are rarely identical in every context.
+Antonyms are words with contrasting meanings.
+Homophones sound alike but have different meanings or spellings.
+Polysemy occurs when one word has multiple related meanings.
+Context can help resolve ambiguity when a word or sentence has more than one possible interpretation.
+A question is not always asking for a factual answer; it may request clarification, reasoning, action, or opinion.
+A good response should address what the speaker actually asked rather than merely repeating nearby words.
+Conversation includes turn-taking, responding to previous statements, asking questions, clarifying misunderstandings, and maintaining a topic.
+A conversational response can acknowledge a statement before adding new information.
+Clarification is useful when a message is genuinely ambiguous and the missing information matters.
+An instruction tells someone or something to perform a task.
+Instructions can include goals, constraints, inputs, steps, and expected outputs.
+A conditional instruction applies only when a specified condition is met.
+A sequence describes actions in an intended order.
+A specification describes required behavior or properties of a system.
+A programming language uses formal syntax and semantics, while natural language is generally more flexible and context-dependent.
+Tokenization divides text into units used by a language-processing system.
+A token can represent a word, part of a word, punctuation, or another text unit depending on the tokenizer.
+A vocabulary is a set of tokens known by a language model or language-processing system.
+Language models estimate patterns or probabilities over sequences of tokens.
+Next-token prediction asks which token is likely to come after a given context.
+Grammar and meaning can both be learned statistically from examples, but statistical learning can also produce mistakes.
+Training examples should contain varied, accurate, and useful language.
+A language model should not treat every generated statement as automatically true.
+When information is uncertain, a system should communicate uncertainty rather than inventing confidence.
+Good communication aims to be understandable, relevant, accurate, and appropriate to the context.
