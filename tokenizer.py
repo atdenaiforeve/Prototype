@@ -7,18 +7,25 @@ from pathlib import Path
 
 
 TOKEN_PATTERN = re.compile(r"\w+|[^\w\s]", re.UNICODE)
+DEFAULT_WORD_LIST = Path(__file__).with_name("english_words.txt")
 
 
 class Tokenizer:
     """Simple word-and-punctuation tokenizer for the first model."""
 
-    def __init__(self, model_path: Path | str = "vocabulary.json") -> None:
+    def __init__(
+        self,
+        model_path: Path | str = "vocabulary.json",
+        word_list_path: Path | str = DEFAULT_WORD_LIST,
+    ) -> None:
         self.model_path = Path(model_path)
+        self.word_list_path = Path(word_list_path)
         self.token_to_id: dict[str, int] = {}
         self.id_to_token: dict[int, str] = {}
         self.frequencies: Counter[str] = Counter()
         self._reset_special_tokens()
         self.load()
+        self.load_starting_vocabulary()
 
     def _reset_special_tokens(self) -> None:
         self.token_to_id = {
@@ -40,19 +47,34 @@ class Tokenizer:
         self._rebuild_ids()
         return tokens
 
-    def _rebuild_ids(self) -> None:
-        existing = set(self.token_to_id)
-        new_tokens = sorted(
-            token for token in self.frequencies
-            if token not in existing
-        )
+    def load_starting_vocabulary(self) -> None:
+        """Load the bundled English word list without pretending it was learned."""
+        if not self.word_list_path.exists():
+            return
+
+        try:
+            lines = self.word_list_path.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            return
+
+        for line in lines:
+            word = line.strip().lower()
+            if not word or word.startswith("#"):
+                continue
+            if TOKEN_PATTERN.fullmatch(word):
+                self._add_token(word)
+
+    def _add_token(self, token: str) -> None:
+        if token in self.token_to_id:
+            return
 
         next_id = max(self.id_to_token, default=-1) + 1
+        self.token_to_id[token] = next_id
+        self.id_to_token[next_id] = token
 
-        for token in new_tokens:
-            self.token_to_id[token] = next_id
-            self.id_to_token[next_id] = token
-            next_id += 1
+    def _rebuild_ids(self) -> None:
+        for token in sorted(self.frequencies):
+            self._add_token(token)
 
     def encode(self, text: str, add_boundaries: bool = True) -> list[int]:
         """Convert text into token IDs."""
@@ -63,7 +85,7 @@ class Tokenizer:
             ids.append(self.token_to_id["<BOS>"])
 
         for token in tokens:
-            ids.append(self.token_to_id.get(token, self.token_to_id["<UNK>"]))
+            ids.append(self.token_to_id.get(token.lower(), self.token_to_id["<UNK>"]))
 
         if add_boundaries:
             ids.append(self.token_to_id["<EOS>"])
@@ -90,7 +112,7 @@ class Tokenizer:
 
     def save(self) -> None:
         data = {
-            "version": 1,
+            "version": 2,
             "token_to_id": self.token_to_id,
             "frequencies": dict(self.frequencies),
         }
