@@ -1,0 +1,131 @@
+Computers are machines that process information according to instructions.
+Computer science studies computation, algorithms, data, systems, and ways of solving problems.
+Hardware is the physical part of a computer system.
+Software is a set of programs and data used by a computer.
+A program is a sequence of instructions that a computer can execute.
+An algorithm is a finite, precise procedure for solving a problem or completing a task.
+Algorithms can be written in natural language, pseudocode, diagrams, or programming languages.
+A programming language provides rules for expressing instructions and data.
+Python is a high-level programming language with variables, control flow, functions, data structures, modules, and classes. Official Python documentation describes its tutorial as covering control flow, functions, data structures, classes, and standard-library topics. 
+Source note: this lesson uses concepts consistent with the official Python documentation and general computer-science education.
+A variable is a name associated with a value or object.
+A data type describes the kind of value being represented and the operations normally available for it.
+Common programming data types include integers, floating-point numbers, strings, booleans, lists, tuples, sets, dictionaries, and objects.
+An integer represents a whole number.
+A floating-point number represents a number using a floating-point representation and can approximate many real values.
+A string represents text.
+A boolean has one of two logical values, commonly written true and false.
+A list is an ordered collection that can contain multiple values.
+A tuple is an ordered collection that is commonly treated as immutable.
+A set represents a collection of distinct elements.
+A dictionary stores associations between keys and values.
+An expression is code that produces a value.
+An operator performs an operation on one or more values.
+Arithmetic operators include addition, subtraction, multiplication, division, floor division, remainder, and exponentiation in Python.
+Comparison operators produce a boolean result by comparing values.
+Logical operators combine or modify boolean conditions.
+An if statement chooses whether a block of code runs based on a condition.
+An else branch provides an alternative when a preceding condition is false.
+An elif branch allows another condition to be checked.
+A loop repeats a block of code.
+A for loop commonly iterates over items in a sequence or other iterable.
+A while loop repeats while a condition remains true.
+A break statement can stop a loop.
+A continue statement can skip to the next loop iteration.
+A function is a reusable block of code that can accept inputs and return a result.
+Parameters are names used by a function definition for incoming values.
+Arguments are values supplied when a function is called.
+A return statement sends a result back from a function.
+A function can have a default parameter value.
+A recursive function calls itself, normally with a condition that eventually stops the recursion.
+A module is a file containing Python definitions and statements that can be imported by another program.
+A package organizes related Python modules.
+A library is a collection of reusable code and resources.
+An API is an interface that defines how software components can communicate or be used.
+A class defines a type that can bundle data and functionality.
+An object is an instance of a class or another value with associated behavior and state.
+An attribute is data or behavior associated with an object.
+A method is a function associated with an object or class.
+Inheritance allows one class to derive behavior or structure from another class.
+Encapsulation is the organization of data and operations so implementation details can be managed behind an interface.
+Abstraction focuses attention on important behavior while hiding unnecessary implementation detail.
+Polymorphism allows different types to provide compatible operations through a common interface.
+Comments explain code to human readers and are not normally executed as program instructions.
+A docstring can document a function, class, or module.
+Indentation is syntactically important in Python and commonly defines code blocks.
+Syntax is the set of rules that determines whether source code is written in a valid form.
+A syntax error occurs when code violates the language's syntax rules.
+A runtime error occurs while a program is executing.
+An exception is an event raised during execution to signal an error or unusual condition.
+Exception handling lets a program respond to expected classes of errors.
+Debugging is the process of finding and fixing problems in software.
+A test checks whether software behaves as expected.
+Unit tests usually check small pieces of code in isolation.
+Integration tests check interactions between multiple components.
+A regression is a previously working behavior that becomes broken after a change.
+Version control records changes to files over time and helps developers collaborate.
+Git is a distributed version-control system.
+A repository is a project managed by a version-control system.
+A commit records a set of changes in a repository.
+A branch provides a separate line of development.
+A merge combines changes from different branches.
+A pull request is a proposed set of changes for review and integration in systems such as GitHub.
+An issue can record a bug, task, question, or feature request.
+Source code is human-readable program text.
+A compiler translates source code into another form, often machine code or an intermediate representation.
+An interpreter executes source code or an intermediate representation according to the language implementation.
+Many modern language implementations combine compilation and interpretation techniques.
+Machine code consists of instructions represented in forms a processor can execute.
+The CPU executes instructions and performs arithmetic, logic, control, and data movement operations.
+The arithmetic logic unit performs many arithmetic and logical operations.
+Registers are very fast storage locations inside a processor.
+RAM provides temporary working memory for running programs.
+Storage devices keep data for longer periods, including when power is removed.
+An operating system manages hardware resources and provides services to applications.
+A process is a running program with its own execution state and resources.
+A thread is a sequence of execution within a process.
+A file is a named collection of stored data.
+A filesystem organizes files and directories on storage.
+A path identifies the location of a file or directory.
+A database organizes structured information so it can be stored, queried, and updated.
+SQL is a language commonly used to query and manipulate relational databases.
+A network allows computers or other devices to communicate.
+A packet is a unit of data transmitted over a network.
+An IP address identifies a network interface or host within an IP network.
+A domain name is a human-readable name used to identify an internet resource or service.
+DNS translates domain names into network addresses and other records.
+HTTP is a protocol used for transferring web resources.
+HTTPS is HTTP protected by TLS encryption.
+A web browser requests and displays web resources such as HTML documents.
+HTML describes the structure of web pages.
+CSS describes presentation and layout for web pages.
+JavaScript is a programming language widely used to add behavior to web pages and applications.
+Frontend code runs primarily in a user's application or browser.
+Backend code runs primarily on servers or other remote systems.
+An input is information supplied to a program.
+An output is information produced by a program.
+A user interface lets people interact with software.
+A command-line interface accepts commands as text.
+A graphical user interface presents controls and information visually.
+Data structures organize data so programs can store and process it efficiently.
+A stack follows last-in, first-out behavior.
+A queue follows first-in, first-out behavior.
+A tree represents hierarchical relationships.
+A graph represents relationships between connected nodes.
+A hash table provides key-based lookup using a hashing technique.
+Searching finds an item or items in a collection.
+Sorting arranges items according to a chosen ordering.
+Linear search checks items one by one.
+Binary search repeatedly divides a sorted search space into smaller portions.
+Algorithm efficiency describes how resource use changes as input size grows.
+Big O notation is commonly used to describe an asymptotic upper bound on growth.
+Correctness is important: a fast algorithm that gives wrong results is not a successful solution.
+Computational thinking includes decomposition, pattern recognition, abstraction, and algorithmic thinking.
+Decomposition breaks a large problem into smaller parts.
+Pattern recognition identifies useful similarities or repeated structures.
+Abstraction focuses on relevant details while leaving irrelevant details aside.
+An algorithm should have clear steps and conditions.
+Pseudocode describes an algorithm without requiring exact programming-language syntax.
+A flowchart can represent program logic with standardized shapes and arrows.
+Good software design aims for clarity, correctness, maintainability, and appropriate performance.
+Documentation helps other people understand how software works and how to use it.
