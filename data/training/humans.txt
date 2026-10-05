@@ -1,0 +1,171 @@
+Humans are living organisms and members of the species Homo sapiens.
+Humans are animals and are vertebrates.
+Humans are mammals because they have hair, produce milk for young, and have other mammalian characteristics.
+Humans are primates and are closely related to other apes.
+A human body is made of cells, tissues, organs, and organ systems.
+A cell is the basic structural and functional unit of living organisms.
+Human cells contain genetic information primarily in DNA.
+DNA carries biological instructions used in development, maintenance, and reproduction.
+Genes are sections of DNA that contribute to biological traits and cellular functions.
+Chromosomes are structures containing DNA and associated proteins.
+Most human cells contain 23 pairs of chromosomes.
+Humans inherit genetic material from biological parents.
+Genetic variation contributes to differences between individuals.
+A mutation is a change in DNA sequence.
+Not every mutation has a noticeable effect on a person's traits or health.
+The human genome contains the genetic information of Homo sapiens.
+The nucleus of many human cells contains chromosomes.
+Mitochondria help cells release usable energy from nutrients.
+Ribosomes build proteins using information carried by RNA.
+The cell membrane controls movement of many substances into and out of a cell.
+Human tissues include epithelial, connective, muscle, and nervous tissue.
+Organs are structures made from multiple tissues that perform specific functions.
+Organ systems are groups of organs that work together.
+The skeletal system provides support, protection, and places for muscles to attach.
+An adult human skeleton normally has 206 bones, although anatomical variation can occur.
+The skull protects the brain.
+The vertebral column supports the body and protects the spinal cord.
+The rib cage helps protect the heart and lungs.
+Joints are places where bones meet.
+Ligaments connect bone to bone.
+Tendons connect muscles to bones.
+Cartilage provides flexible support and reduces friction at many joints.
+Muscles produce force that helps the body move and maintain posture.
+Skeletal muscles are generally under voluntary control.
+Smooth muscle works automatically in organs such as the digestive tract and blood vessels.
+Cardiac muscle forms the heart and contracts rhythmically.
+The muscular and skeletal systems work together to produce movement.
+The nervous system detects information, processes signals, and coordinates many body functions.
+The brain is the main organ of the central nervous system.
+The spinal cord carries signals between the brain and much of the body.
+Nerves connect the central nervous system with the rest of the body.
+Neurons are cells specialized for transmitting electrical and chemical signals.
+The brain has many interconnected regions with different but overlapping functions.
+The cerebrum is involved in perception, thought, language, memory, planning, and voluntary movement.
+The cerebellum contributes to coordination, balance, and motor learning.
+The brainstem connects major brain regions and helps regulate vital functions.
+The autonomic nervous system regulates many involuntary body processes.
+The senses provide information about the environment and the body's internal state.
+Vision uses light-sensitive cells in the retina.
+The eye focuses light onto the retina.
+The optic nerve carries visual information toward the brain.
+Hearing begins when sound waves cause structures in the ear to vibrate.
+The inner ear contains structures involved in hearing and balance.
+Smell depends on receptors that detect chemical molecules in the nasal cavity.
+Taste uses receptors that detect chemicals in food and drink.
+Touch includes sensations such as pressure, temperature, vibration, and pain.
+Pain is a protective sensory signal that can indicate actual or potential tissue damage.
+The endocrine system uses hormones to regulate many processes.
+Hormones are chemical messengers released by cells or glands.
+The pituitary gland helps regulate several other endocrine functions.
+The thyroid gland produces hormones involved in regulating metabolism and development.
+The adrenal glands produce hormones involved in stress responses and other functions.
+The pancreas has endocrine functions and also produces digestive enzymes.
+Insulin helps regulate blood glucose concentration.
+The circulatory system transports oxygen, nutrients, hormones, carbon dioxide, and other substances.
+The heart is a muscular organ that pumps blood through the circulatory system.
+The heart has four chambers in humans: two atria and two ventricles.
+Arteries generally carry blood away from the heart.
+Veins generally carry blood toward the heart.
+Capillaries are tiny blood vessels where exchange occurs between blood and tissues.
+Red blood cells transport much of the body's oxygen using hemoglobin.
+White blood cells help defend the body against pathogens and abnormal cells.
+Platelets help blood clot after blood vessels are damaged.
+Blood plasma is the liquid component of blood.
+The respiratory system brings oxygen into the body and removes carbon dioxide.
+Air travels through the nose or mouth, airways, and into the lungs.
+The trachea is a major airway leading toward the lungs.
+The bronchi carry air into the lungs.
+Alveoli are tiny air sacs where gases are exchanged between air and blood.
+The diaphragm is an important muscle involved in breathing.
+During normal inhalation, the diaphragm contracts and helps expand the chest cavity.
+The digestive system breaks food into smaller molecules that can be absorbed or used.
+Digestion begins in the mouth with chewing and chemical processes.
+The esophagus carries swallowed food toward the stomach.
+The stomach uses mechanical and chemical processes to help digest food.
+The small intestine is a major site of digestion and nutrient absorption.
+The large intestine absorbs water and processes remaining material.
+The liver performs many functions including processing nutrients and producing bile.
+The gallbladder stores and concentrates bile.
+The pancreas produces digestive enzymes and hormones.
+The kidneys filter blood and help regulate water, salts, acids, and waste products.
+The urinary system removes certain waste products from the blood.
+The immune system protects the body against pathogens and abnormal cells.
+The skin forms an important protective barrier against the external environment.
+The skin contains structures involved in sensation, temperature regulation, and protection.
+Sweating can help cool the body when sweat evaporates from the skin.
+The body's internal temperature is regulated within a relatively narrow range.
+Homeostasis is the maintenance of stable internal conditions despite changes in the environment.
+The immune system includes physical barriers, cells, tissues, organs, and chemical defenses.
+Innate immunity provides rapid, general defenses.
+Adaptive immunity develops targeted responses to particular antigens.
+Antibodies are proteins produced by certain immune cells that can recognize specific targets.
+Vaccination trains the immune system to respond more effectively to specific infectious agents.
+A pathogen is an organism or infectious agent that can cause disease.
+Viruses require host cells to reproduce.
+Bacteria are single-celled organisms, and many are harmless or beneficial while some cause disease.
+Fungi include organisms such as yeasts and molds, and some can cause infections.
+Parasites live in or on hosts and obtain resources from them.
+Antibiotics are medicines used against susceptible bacterial infections and do not treat viruses.
+Nutrition provides energy and materials needed for growth, repair, and normal body functions.
+Carbohydrates, fats, and proteins are major classes of nutrients that can provide energy or building materials.
+Vitamins and minerals are required in smaller amounts for many biological processes.
+Water is essential for human cells and body functions.
+A balanced diet supplies a variety of nutrients in appropriate amounts.
+Metabolism is the collection of chemical reactions occurring in cells and organisms.
+Basal metabolic processes require energy even when a person is resting.
+Physical activity increases energy use and affects muscles, the heart, lungs, and metabolism.
+Sleep is a normal biological state important for physical and mental functioning.
+The sleep-wake cycle is influenced by internal biological rhythms and environmental cues.
+Memory is the ability to encode, store, and retrieve information.
+Learning involves changes in knowledge, skills, behavior, or neural connections through experience and practice.
+Emotions involve coordinated physiological and psychological processes.
+Stress is a response to perceived demands or threats and can involve changes in many body systems.
+Human behavior is influenced by biology, learning, environment, culture, relationships, and individual experience.
+Human development occurs across the lifespan.
+Infancy includes rapid physical and neurological development.
+Childhood includes major changes in physical growth, learning, language, and social development.
+Adolescence is a developmental period involving physical, neurological, emotional, and social changes.
+Puberty is a biological process involving hormonal changes and sexual maturation.
+Adulthood includes continued learning, adaptation, and changes across many stages of life.
+Aging involves gradual biological changes over time and differs greatly between individuals.
+Reproduction allows humans to produce offspring.
+Human reproduction normally involves sperm and an egg combining genetic material.
+Fertilization produces a zygote containing genetic material from both biological parents.
+Embryonic and fetal development occur during pregnancy.
+The placenta allows exchange of gases, nutrients, and waste products between the pregnant person's blood supply and the developing fetus without normally mixing the two blood supplies directly.
+After birth, newborns require substantial care and nutrition.
+Humans are social animals that commonly live in families, communities, and larger societies.
+Communication can use speech, writing, gestures, facial expressions, signs, images, and other systems.
+Language allows humans to communicate complex information and abstract ideas.
+Culture includes shared knowledge, practices, values, beliefs, technologies, and traditions within groups.
+Humans learn from other people through teaching, imitation, cooperation, and communication.
+Cooperation allows groups to accomplish tasks that may be difficult for one individual.
+Human societies develop institutions, laws, customs, economies, technologies, and systems of education.
+Tools extend human abilities and have been used by humans for a very long time.
+Humans can make and use complex tools, machines, computers, and other technologies.
+Agriculture involves cultivating plants and managing animals for food and other resources.
+Cities are large human settlements with dense populations and complex infrastructure.
+Human history includes migrations, technological changes, cultural developments, conflicts, cooperation, and scientific discoveries.
+Archaeology studies past human activity using physical evidence.
+Anthropology studies humans and human cultures from biological, cultural, linguistic, and archaeological perspectives.
+Human geography studies relationships between people, places, environments, and spatial patterns.
+Science uses systematic observation, measurement, testing, evidence, and reasoning to investigate the natural world.
+Humans use mathematics to describe quantities, patterns, structures, and relationships.
+Engineering applies scientific and mathematical knowledge to design and build useful systems.
+Human technology can produce major benefits but can also create environmental and social challenges.
+Humans depend on ecosystems for resources and ecological services.
+Human activities can alter habitats, biodiversity, climate, water systems, and nutrient cycles.
+Conservation aims to protect biodiversity, ecosystems, and natural resources.
+Different humans can have different physical traits while belonging to the same species.
+Human biological variation is influenced by genetics, development, environment, nutrition, health, and many other factors.
+A person's appearance does not reliably reveal their abilities, personality, intelligence, or worth.
+Human bodies have common biological structures but also substantial individual variation.
+Health is influenced by biological, environmental, behavioral, social, and economic factors.
+Medicine uses scientific knowledge to prevent, diagnose, manage, and treat disease and injury.
+Public health focuses on protecting and improving the health of populations.
+Clean water, sanitation, vaccination, nutrition, medical care, and disease prevention can improve population health.
+Humans can adapt behavior and technology to many different environments.
+The human body is an interconnected system in which organs and processes affect one another.
+Understanding humans requires combining biology, psychology, neuroscience, anthropology, history, and other fields.
+Humans are one species within Earth's larger web of life.
