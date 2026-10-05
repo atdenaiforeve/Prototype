@@ -1,8 +1,8 @@
 """Inference utilities for Prototype.
 
 This layer sits between the trained model and the future chat interface.
-It handles checkpoint loading and controlled next-token generation without
-requiring a chat UI.
+It handles checkpoint loading, controlled generation, and the bounded
+structured reasoning loop.
 """
 
 from __future__ import annotations
@@ -13,6 +13,8 @@ import torch
 
 from model import PrototypeLanguageModel
 from monitor import ReasoningMonitor, entropy
+from reasoning import ReasoningWorkspace
+from reasoning_engine import ReasoningResult, reason
 from tokenizer import Tokenizer
 
 
@@ -25,12 +27,7 @@ def load_checkpoint(
     if not checkpoint_path.exists():
         raise FileNotFoundError(f"checkpoint does not exist: {checkpoint_path}")
 
-    checkpoint = torch.load(
-        checkpoint_path,
-        map_location="cpu",
-        weights_only=False,
-    )
-
+    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     tokenizer = Tokenizer(model_path=tokenizer_path)
     vocab_size = int(checkpoint["vocab_size"])
     context_size = int(checkpoint["context_size"])
@@ -78,13 +75,17 @@ def generate(
 
     ids = tokenizer.encode(prompt, add_boundaries=False)
     if not ids:
-        ids = [2]  # <BOS>
+        ids = [2]
 
     generated = list(ids)
 
     for _ in range(max_new_tokens):
         context = generated[-model.context_size:]
-        input_ids = torch.tensor([context], dtype=torch.long, device=next(model.parameters()).device)
+        input_ids = torch.tensor(
+            [context],
+            dtype=torch.long,
+            device=next(model.parameters()).device,
+        )
         logits = model(input_ids)[0, -1, :] / temperature
 
         k = min(top_k, logits.numel())
@@ -92,7 +93,6 @@ def generate(
         probabilities = torch.softmax(values, dim=-1)
         next_index = torch.multinomial(probabilities, num_samples=1)
         next_token = int(indices[next_index].item())
-
         generated.append(next_token)
 
         if monitor is not None:
@@ -115,10 +115,38 @@ def generate(
                 stopped=next_token == 3,
             )
 
-        if next_token == 3:  # <EOS>
+        if next_token == 3:
             break
 
     return tokenizer.decode(generated)
+
+
+def reason_generate(
+    model: PrototypeLanguageModel,
+    tokenizer: Tokenizer,
+    prompt: str,
+    *,
+    candidates: int = 3,
+    max_new_tokens: int = 32,
+    temperature: float = 0.8,
+    top_k: int = 20,
+) -> ReasoningResult:
+    """Generate several bounded candidates and let Prototype choose one."""
+    workspace = ReasoningWorkspace(max_hypotheses=candidates)
+    return reason(
+        prompt,
+        lambda candidate_prompt, **kwargs: generate(
+            model,
+            tokenizer,
+            candidate_prompt,
+            **kwargs,
+        ),
+        candidates=candidates,
+        max_new_tokens=max_new_tokens,
+        temperature=temperature,
+        top_k=top_k,
+        workspace=workspace,
+    )
 
 
 if __name__ == "__main__":
@@ -131,19 +159,36 @@ if __name__ == "__main__":
     parser.add_argument("--max-new-tokens", type=int, default=32)
     parser.add_argument("--temperature", type=float, default=0.8)
     parser.add_argument("--top-k", type=int, default=20)
-    parser.add_argument("--monitor", type=Path, default=None, help="Write reasoning telemetry as JSONL.")
+    parser.add_argument("--monitor", type=Path, default=None)
+    parser.add_argument("--reason", action="store_true", help="Explore bounded candidates before choosing an answer.")
+    parser.add_argument("--reasoning-candidates", type=int, default=3)
     args = parser.parse_args()
 
     model, tokenizer, _ = load_checkpoint(args.checkpoint, args.tokenizer)
-    monitor = ReasoningMonitor(tokenizer.decode, path=args.monitor) if args.monitor else None
-    print(
-        generate(
+
+    if args.reason:
+        result = reason_generate(
             model,
             tokenizer,
             args.prompt,
+            candidates=args.reasoning_candidates,
             max_new_tokens=args.max_new_tokens,
             temperature=args.temperature,
             top_k=args.top_k,
-            monitor=monitor,
         )
-    )
+        print(result.output)
+        print("\nReasoning decision:")
+        print(result.workspace)
+    else:
+        monitor = ReasoningMonitor(tokenizer.decode, path=args.monitor) if args.monitor else None
+        print(
+            generate(
+                model,
+                tokenizer,
+                args.prompt,
+                max_new_tokens=args.max_new_tokens,
+                temperature=args.temperature,
+                top_k=args.top_k,
+                monitor=monitor,
+            )
+        )
