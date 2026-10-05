@@ -1,0 +1,36 @@
+name: Reasoning tests
+
+on:
+  push:
+    paths:
+      - "reasoning.py"
+      - "reasoning_engine.py"
+      - "monitor.py"
+      - "inference.py"
+      - "tests/test_reasoning.py"
+      - "tests/test_reasoning_engine.py"
+      - "tests/test_monitor.py"
+      - ".github/workflows/reasoning-tests.yml"
+  pull_request:
+    paths:
+      - "reasoning.py"
+      - "reasoning_engine.py"
+      - "monitor.py"
+      - "inference.py"
+      - "tests/test_reasoning.py"
+      - "tests/test_reasoning_engine.py"
+      - "tests/test_monitor.py"
+      - ".github/workflows/reasoning-tests.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install torch
+      - name: Run reasoning tests
+        run: python -m unittest tests.test_monitor tests.test_reasoning tests.test_reasoning_engine -v
