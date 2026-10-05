@@ -1,15 +1,10 @@
-"""Train Prototype's first neural language model.
+"""Train Prototype's neural language model from the whole training-data folder.
 
-This keeps training small and explicit:
-1. build next-token examples from text,
-2. run the model,
-3. calculate prediction loss,
-4. backpropagate,
-5. update the weights,
-6. save a checkpoint.
+By default, every .txt file under data/training/ is loaded recursively and
+combined into one training corpus. Add new lessons by dropping UTF-8 .txt files
+into that folder; no code changes are required.
 
-The training data is intentionally supplied by the caller; this script does
-not download or silently import an external pretrained model.
+This script does not download or silently import an external pretrained model.
 """
 
 from __future__ import annotations
@@ -22,6 +17,26 @@ from torch import nn
 
 from model import PrototypeLanguageModel
 from tokenizer import Tokenizer
+
+
+def load_training_folder(data_dir: Path) -> tuple[str, list[Path]]:
+    """Load every UTF-8 .txt file below data_dir, in stable path order."""
+    if not data_dir.exists():
+        raise FileNotFoundError(f"training directory does not exist: {data_dir}")
+
+    files = sorted(path for path in data_dir.rglob("*.txt") if path.is_file())
+    if not files:
+        raise ValueError(f"no .txt training files found in {data_dir}")
+
+    parts: list[str] = []
+    for path in files:
+        parts.append(path.read_text(encoding="utf-8").strip())
+
+    text = "\n\n".join(part for part in parts if part)
+    if not text:
+        raise ValueError(f"training files in {data_dir} are empty")
+
+    return text, files
 
 
 def make_examples(token_ids: list[int], context_size: int) -> tuple[torch.Tensor, torch.Tensor]:
@@ -75,16 +90,44 @@ def train(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Train Prototype's neural language model.")
-    parser.add_argument("text_file", type=Path, help="UTF-8 text file containing training text")
-    parser.add_argument("--epochs", type=int, default=100)
-    parser.add_argument("--learning-rate", type=float, default=0.001)
-    parser.add_argument("--context-size", type=int, default=8)
-    parser.add_argument("--checkpoint", type=Path, default=Path("prototype_model.pt"))
+    parser = argparse.ArgumentParser(
+        description="Train Prototype from every .txt file in data/training/."
+    )
+    parser.add_argument(
+        "--data-dir",
+        type=Path,
+        default=Path("data/training"),
+        help="directory containing training .txt files (default: data/training)",
+    )
+    parser.add_argument(
+        "--epochs",
+        type=int,
+        default=100,
+    )
+    parser.add_argument(
+        "--learning-rate",
+        type=float,
+        default=0.001,
+    )
+    parser.add_argument(
+        "--context-size",
+        type=int,
+        default=8,
+    )
+    parser.add_argument(
+        "--checkpoint",
+        type=Path,
+        default=Path("prototype_model.pt"),
+    )
     args = parser.parse_args()
 
+    text, files = load_training_folder(args.data_dir)
+
+    print(f"loaded {len(files)} training file(s):")
+    for path in files:
+        print(f"  - {path}")
+
     tokenizer = Tokenizer()
-    text = args.text_file.read_text(encoding="utf-8")
     tokenizer.learn(text)
     tokenizer.save()
 
@@ -112,6 +155,7 @@ def main() -> None:
             "embedding_size": model.embedding_size,
             "hidden_size": model.hidden_size,
             "final_loss": history[-1],
+            "training_files": [str(path) for path in files],
         },
         args.checkpoint,
     )
