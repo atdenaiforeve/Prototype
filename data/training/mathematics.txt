@@ -1,0 +1,124 @@
+Mathematics is the study of quantity, structure, space, patterns, relationships, and change.
+Numbers are mathematical objects used to represent quantities and other ideas.
+Natural numbers are commonly used for counting.
+Whole numbers include zero and the counting numbers.
+Integers include positive numbers, negative numbers, and zero.
+Rational numbers can be written as a ratio of integers with a nonzero denominator.
+Irrational numbers cannot be written as a ratio of integers.
+Real numbers include rational and irrational numbers.
+Complex numbers extend the real numbers using the imaginary unit.
+The imaginary unit is written as i and satisfies i squared equals negative one.
+Zero represents the absence of a quantity in many contexts.
+Positive numbers are greater than zero.
+Negative numbers are less than zero.
+An absolute value describes a number's distance from zero on the number line.
+Addition combines quantities.
+Subtraction finds a difference or removes a quantity.
+Multiplication can represent repeated addition or scaling.
+Division separates a quantity into equal parts or finds how many groups fit into a quantity.
+A factor is a number that divides another number exactly.
+A multiple is a number obtained by multiplying a number by an integer.
+A prime number has exactly two positive factors: one and itself.
+A composite number has more than two positive factors.
+The greatest common factor is the largest positive factor shared by two or more integers.
+The least common multiple is the smallest positive multiple shared by two or more positive integers.
+A fraction represents a quantity as one integer divided by another nonzero integer.
+The numerator is the top part of a fraction.
+The denominator is the bottom part of a fraction.
+Equivalent fractions represent the same value.
+A decimal is another way to represent many fractions and real numbers.
+A percentage represents a ratio out of one hundred.
+Ratios compare quantities.
+A proportion states that two ratios are equal.
+An exponent represents repeated multiplication of a base in many common cases.
+A base is the number or expression being raised to a power.
+A square root of a nonnegative number is a number whose square equals that number.
+Order of operations is a convention for interpreting arithmetic expressions.
+Parentheses or other grouping symbols can indicate which operations are performed together.
+Variables are symbols used to represent unknown or changing quantities.
+A constant is a quantity that does not change within a specified context.
+An expression combines numbers, variables, and operations.
+An equation states that two expressions are equal.
+An inequality compares quantities using symbols such as less than or greater than.
+Solving an equation means finding values that make the equation true.
+The distributive property states that multiplication can be distributed over addition or subtraction.
+The commutative property means the order can be changed for addition or multiplication without changing the result.
+The associative property means grouping can be changed for addition or multiplication without changing the result.
+The identity property describes operations involving values such as zero for addition and one for multiplication.
+A linear equation can often be represented by a straight line when graphed in two dimensions.
+The slope of a line measures its rate of change.
+The y-intercept is where a graph crosses the y-axis.
+A function maps each allowed input to exactly one output.
+The input of a function is often represented by x.
+The output is often represented by f of x.
+A domain is the set of allowed inputs of a function.
+A range is the set of outputs produced by a function.
+A sequence is an ordered list of numbers or other objects.
+An arithmetic sequence has a constant difference between consecutive terms.
+A geometric sequence has a constant ratio between consecutive nonzero terms.
+A pattern is a repeated or structured relationship that can be described or predicted.
+Algebra uses symbols and rules to represent and solve relationships.
+Geometry studies shapes, sizes, positions, distances, angles, and properties of space.
+A point represents a location and has no size in idealized geometry.
+A line extends infinitely in two directions.
+A line segment has two endpoints.
+A ray has one endpoint and extends infinitely in one direction.
+Parallel lines remain the same distance apart in a plane and do not intersect.
+Perpendicular lines meet at a right angle.
+An angle is formed by two rays sharing an endpoint.
+A right angle measures ninety degrees.
+An acute angle is less than ninety degrees.
+An obtuse angle is greater than ninety degrees but less than one hundred eighty degrees.
+A straight angle measures one hundred eighty degrees.
+A triangle has three sides and three angles.
+The interior angles of a triangle sum to one hundred eighty degrees in Euclidean geometry.
+An equilateral triangle has three equal sides and three equal angles.
+An isosceles triangle has at least two equal sides.
+A scalene triangle has three different side lengths.
+A quadrilateral has four sides.
+A rectangle has four right angles.
+A square has four equal sides and four right angles.
+A parallelogram has two pairs of parallel opposite sides.
+A rhombus has four equal sides.
+A trapezoid has at least one pair of parallel sides under common definitions.
+A circle is the set of points in a plane at a fixed distance from a center.
+The radius is the distance from the center of a circle to its edge.
+The diameter is twice the radius.
+Circumference is the distance around a circle.
+Area measures the amount of two-dimensional surface inside a boundary.
+The area of a rectangle is length multiplied by width.
+The area of a triangle is one half multiplied by base and height.
+The volume of a rectangular prism is length multiplied by width multiplied by height.
+Volume measures the amount of three-dimensional space occupied by an object.
+Surface area measures the total area of the outer surfaces of a three-dimensional object.
+The Pythagorean theorem relates the side lengths of a right triangle.
+For a right triangle, a squared plus b squared equals c squared when c is the hypotenuse.
+Coordinates can describe positions using ordered numbers.
+The Cartesian coordinate plane uses horizontal and vertical axes.
+The x-axis is horizontal in the standard coordinate plane.
+The y-axis is vertical in the standard coordinate plane.
+The origin is the point with coordinates zero and zero.
+Statistics is the study of collecting, organizing, analyzing, interpreting, and communicating data.
+A data set is a collection of observations or measurements.
+The mean is the sum of values divided by the number of values.
+The median is the middle value when data are ordered, with the average of the two middle values for an even-sized set.
+The mode is the most frequently occurring value.
+The range of a data set is the difference between its maximum and minimum values.
+Probability measures how likely an event is.
+A probability of zero represents an impossible event in a given model.
+A probability of one represents a certain event in a given model.
+For many equally likely outcomes, probability can be calculated as favorable outcomes divided by total outcomes.
+A sample is a subset of a larger population used to learn about that population.
+Correlation describes an association between variables but does not by itself prove causation.
+Graphs can represent numerical relationships and make patterns easier to see.
+A bar chart compares categories.
+A line graph can show change across an ordered variable such as time.
+A scatter plot shows pairs of numerical observations and can reveal relationships.
+A mathematical proof is a logical argument that establishes a statement from accepted definitions, axioms, and previously established results.
+Logic studies valid reasoning and relationships between statements.
+Mathematical models use mathematics to represent real systems and make predictions.
+Units give numerical measurements meaning.
+The metric system uses units such as metres, kilograms, seconds, litres, and degrees Celsius.
+Scientific notation represents very large or very small numbers using powers of ten.
+Estimation provides an approximate value when an exact value is unnecessary or unavailable.
+Checking an answer can reveal calculation errors or unreasonable results.
