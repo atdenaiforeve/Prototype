@@ -12,6 +12,7 @@ from pathlib import Path
 import torch
 
 from model import PrototypeLanguageModel
+from monitor import ReasoningMonitor, entropy
 from tokenizer import Tokenizer
 
 
@@ -65,6 +66,7 @@ def generate(
     max_new_tokens: int = 32,
     temperature: float = 0.8,
     top_k: int = 20,
+    monitor: ReasoningMonitor | None = None,
 ) -> str:
     """Generate a short continuation from a prompt."""
     if max_new_tokens < 1:
@@ -93,6 +95,26 @@ def generate(
 
         generated.append(next_token)
 
+        if monitor is not None:
+            candidate_limit = min(monitor.top_k, k)
+            candidates = [
+                {
+                    "token_id": int(indices[i].item()),
+                    "text": tokenizer.decode([int(indices[i].item())]),
+                    "probability": float(probabilities[i].item()),
+                }
+                for i in range(candidate_limit)
+            ]
+            monitor.record(
+                step=len(generated) - len(ids) - 1,
+                context_length=len(context),
+                token_id=next_token,
+                probability=float(probabilities[next_index].item()),
+                entropy=entropy(probabilities.tolist()),
+                top_candidates=candidates,
+                stopped=next_token == 3,
+            )
+
         if next_token == 3:  # <EOS>
             break
 
@@ -109,9 +131,11 @@ if __name__ == "__main__":
     parser.add_argument("--max-new-tokens", type=int, default=32)
     parser.add_argument("--temperature", type=float, default=0.8)
     parser.add_argument("--top-k", type=int, default=20)
+    parser.add_argument("--monitor", type=Path, default=None, help="Write reasoning telemetry as JSONL.")
     args = parser.parse_args()
 
     model, tokenizer, _ = load_checkpoint(args.checkpoint, args.tokenizer)
+    monitor = ReasoningMonitor(tokenizer.decode, path=args.monitor) if args.monitor else None
     print(
         generate(
             model,
@@ -120,5 +144,6 @@ if __name__ == "__main__":
             max_new_tokens=args.max_new_tokens,
             temperature=args.temperature,
             top_k=args.top_k,
+            monitor=monitor,
         )
     )
