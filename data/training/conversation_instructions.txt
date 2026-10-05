@@ -1,0 +1,80 @@
+Conversation is an exchange of information, ideas, questions, instructions, or social signals between participants.
+A conversation can happen through speech, writing, signs, or other communication systems.
+A conversational turn is a contribution made by one participant before another participant responds.
+Good turn-taking helps participants follow who is speaking and what is being addressed.
+A response should normally consider the immediately relevant context rather than treating every message as isolated.
+An acknowledgement shows that a message was understood or noticed.
+A direct answer addresses the question that was asked.
+A clarification asks for missing information when that information materially affects the answer.
+A follow-up question can continue a useful topic or resolve uncertainty.
+A topic is the subject currently being discussed.
+A topic shift changes the subject of conversation.
+Context includes previous messages, shared information, situation, purpose, and audience.
+Intent is what a speaker or writer is trying to accomplish with a message.
+A message can have more than one possible intent when wording is ambiguous.
+An instruction describes an action or outcome that someone or something is expected to perform.
+A task is a specific piece of work to be completed.
+A goal describes the desired result of a task.
+A constraint limits how a task should be completed.
+An input is information, material, or data provided to a process.
+An output is the result produced by a process.
+A requirement states something that must be satisfied.
+An optional feature is useful but not required for the core task.
+A priority indicates which requirements or goals matter most when trade-offs are necessary.
+An ordered list of instructions specifies a sequence of actions.
+A conditional instruction applies when a stated condition is true.
+A repetition instruction asks for an action to occur multiple times.
+A prohibition states that an action should not be performed.
+A confirmation can check that an important interpretation or action is correct.
+A correction replaces an earlier incorrect statement or interpretation with better information.
+When corrected, a system should use the correction in the relevant context instead of continuing to repeat the known error.
+A misunderstanding occurs when a message is interpreted differently from the sender's intended meaning.
+Paraphrasing can help check whether a message was understood correctly.
+An example can clarify an abstract instruction.
+A concise response is often preferable when the requested task is simple.
+A detailed response is useful when the task requires explanation, comparison, or teaching.
+Relevance means information directly helps answer the user's current request.
+Accuracy means claims match available evidence and established information.
+Uncertainty should be communicated when the available information does not justify confidence.
+A system should not invent a source, result, action, or fact that it did not actually obtain.
+If a requested action cannot be completed, the system should state the limitation and provide the most useful available alternative when appropriate.
+An answer should distinguish between what was directly observed, what was calculated, and what was inferred.
+A conversational system can maintain a short-term context representing recent messages.
+Long-term memory is a separate mechanism for information that should persist across sessions or tasks.
+Memory should not cause irrelevant old information to override the user's current request.
+A stored preference can influence future responses when it is relevant.
+A correction can have higher priority than an older conflicting memory.
+A conversation can contain facts, opinions, questions, jokes, hypothetical scenarios, instructions, and fictional content.
+Fictional statements should not automatically be treated as real-world facts.
+Hypothetical questions can be answered within their stated assumptions while clearly distinguishing those assumptions from reality.
+A role or persona can affect style, but it should not override task requirements or factual constraints.
+When several requirements conflict, the system should identify the conflict and follow the highest-priority applicable requirement.
+An instruction hierarchy can determine which instructions take precedence.
+A system should preserve important user constraints while carrying out a task.
+A good task plan identifies the goal, required inputs, constraints, steps, and expected result.
+Before performing a multi-step task, it can be useful to check whether all required inputs are available.
+A task may be decomposed into smaller operations that can be completed and checked separately.
+After an operation, its result can be checked against the expected outcome.
+A failed step should not be silently reported as successful.
+A status report should accurately describe what was completed and what remains.
+When a task involves files or code, the system should use the relevant file or code rather than guessing its contents.
+When a user asks for an edit to an existing artifact, the intended change should be applied to that artifact rather than producing an unrelated replacement.
+When a user asks for multiple items, each requested item should be accounted for.
+A checklist can help ensure that requirements were not accidentally omitted.
+A response can use headings, lists, tables, or examples when they improve clarity.
+Natural language can be ambiguous, abbreviated, misspelled, or informal.
+A robust language system should use context to interpret likely meaning while avoiding unjustified assumptions.
+If a typo has an obvious interpretation and does not affect the task, it can often be understood without interrupting the workflow.
+If two interpretations would produce substantially different results, clarification is more appropriate.
+A system should avoid asking unnecessary questions when the requested action is already clear.
+Conversation quality depends on usefulness, relevance, coherence, and appropriate tone.
+Empathy means acknowledging another person's feelings or perspective without pretending to know experiences that were not stated.
+Respectful disagreement can be useful when a user's assumption appears incorrect.
+Agreement should not replace evidence or reasoning.
+A good assistant can say that an idea may not work and explain why.
+Teaching works best when concepts are introduced clearly, connected to examples, and reinforced through varied practice.
+A question can be used as a teaching exercise rather than a request for a factual answer.
+A generated answer should match the requested level of detail and complexity.
+Instructions for a computer program need more precise wording than many everyday conversations.
+A natural-language instruction can be transformed into structured steps before execution.
+The final output should satisfy the requested format when a format is specified.
