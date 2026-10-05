@@ -1,0 +1,93 @@
+Learning is the process by which a system changes based on information, experience, examples, feedback, or practice.
+Memory is the ability to retain information so it can be used later.
+Short-term memory holds information for a limited period or context.
+Long-term memory stores information that can persist over longer periods.
+A memory system can store facts, preferences, experiences, goals, tasks, concepts, and corrections.
+Memory retrieval means selecting stored information that is relevant to a current situation.
+Relevant memory is information that helps with the current task or context.
+Irrelevant memory should not dominate a response simply because it was stored earlier.
+A memory can have confidence representing how strongly the system currently believes it.
+A memory can have importance representing how useful or significant it is.
+A memory can become more useful when it is repeatedly confirmed by reliable evidence.
+A memory should be updated when better information replaces an older version.
+A correction can preserve the fact that an earlier memory was changed and why.
+Forgetting can remove or archive information that should no longer be used.
+Memory systems can use indexes and search methods to retrieve information efficiently.
+A database can store structured memories and their metadata.
+Relationships between memories can represent connections such as related concepts, corrections, or supporting information.
+An experience records something that happened or something learned through interaction.
+A preference records a choice that may affect future relevant decisions.
+A goal describes a desired future outcome.
+A task records work that needs to be completed.
+A concept represents an idea or knowledge structure.
+A skill represents an ability that has been learned or practiced.
+A memory source records where information came from when that information matters.
+A timestamp can record when a memory was created, updated, or last used.
+Memory access counts can help identify information that is frequently retrieved.
+Memory reinforcement increases confidence or relevance when new evidence supports an existing memory.
+Memory weakening reduces confidence when evidence becomes less reliable or conflicts with the memory.
+Memory correction should prefer newer, better-supported information when two memories conflict.
+A memory system should not assume that every stored statement is permanently true.
+A memory can be uncertain, conditional, outdated, or context-specific.
+Learning from examples involves identifying patterns that help predict or produce useful outputs.
+Supervised learning uses examples containing inputs and desired outputs.
+Unsupervised learning finds patterns in data without explicit target labels.
+Reinforcement learning uses feedback from actions and outcomes to improve behavior.
+Training is the process of adjusting a model or system based on learning data or feedback.
+A training example contains information used to teach a system.
+A dataset is a collection of training or evaluation examples.
+A training split is used to update model parameters.
+A validation split is used to monitor performance during development without directly training on those examples.
+A test split is used to evaluate performance after development.
+Data leakage occurs when information that should be unavailable during evaluation influences training or model selection.
+Overfitting occurs when a model learns training patterns too specifically and performs poorly on new data.
+Underfitting occurs when a model is too limited to capture important patterns in the data.
+Generalization is the ability to perform well on new examples rather than only memorized training examples.
+A parameter is a value learned or adjusted by a model during training.
+A hyperparameter controls aspects of training or model structure and is usually chosen outside the learned parameters.
+An optimizer changes model parameters to reduce an objective such as training loss.
+A loss function measures how different a model's output is from a desired target.
+Gradient-based optimization uses derivatives or gradients to determine useful parameter updates.
+A learning rate controls the size of parameter updates in many optimization algorithms.
+An epoch is one complete pass through a training dataset.
+A batch is a group of training examples processed together.
+A checkpoint is a saved state of a model and often its training information.
+Saving checkpoints can allow training to resume after interruption.
+Evaluation measures how well a system performs a defined task.
+An evaluation metric should match the goal of the system.
+A baseline provides a reference point for comparing a new system.
+Error analysis examines incorrect outputs to identify recurring problems.
+A model can fail because of insufficient data, poor data quality, limited capacity, training problems, ambiguous inputs, or incorrect assumptions.
+More training data is not automatically better if the data is inaccurate, duplicated, biased, or irrelevant.
+High-quality training data should be accurate, diverse, relevant, and appropriately licensed.
+Data should be cleaned so accidental corruption does not teach harmful patterns.
+Deduplication can reduce repeated examples that would otherwise dominate training.
+A balanced dataset can help prevent a model from becoming overly specialized in one narrow pattern.
+A curriculum can organize lessons from basic concepts toward more complex concepts.
+Spaced practice can reinforce information over repeated sessions.
+Feedback can identify errors and provide information for improving future performance.
+Active learning selects informative examples for additional labeling or training.
+Continual learning updates a system over time while attempting to preserve useful previous knowledge.
+Catastrophic forgetting occurs when learning new information causes a system to lose previously learned capabilities.
+A replay strategy can revisit older examples to reduce forgetting.
+A model's weights are numerical parameters that influence its behavior.
+A language model can learn statistical relationships among tokens from text.
+Next-token training teaches a language model to predict a following token from context.
+Embeddings represent discrete tokens as learned numerical vectors.
+A neural network is a parameterized function composed of connected computational operations.
+Backpropagation calculates gradients that can be used to update neural-network parameters.
+Self-attention allows a model to weigh relationships between different positions in a sequence.
+A transformer is a neural-network architecture built around attention and related components.
+A model's context window is the amount of input it can process as context at one time.
+Generation is the process of producing new output from a trained model.
+Sampling can introduce controlled variation into generated text.
+Temperature can change the sharpness of a probability distribution during sampling.
+Top-k sampling limits choices to a selected number of high-probability tokens.
+Top-p sampling selects from a probability mass containing the most likely tokens.
+Greedy decoding chooses the highest-probability next token at each step.
+A generated response is not automatically a verified fact simply because a model produced it.
+Retrieval can provide external or stored information to a model at generation time.
+Retrieval-augmented generation combines retrieved information with model generation.
+A memory engine and a neural language model can be separate components connected by an interface.
+An interface can decide when to store, retrieve, update, or ignore memories.
+A useful agent can combine a model, memory, tools, planning, and feedback.
