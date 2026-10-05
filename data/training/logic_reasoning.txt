@@ -1,0 +1,95 @@
+Logic is the study of valid reasoning and relationships between statements.
+Reasoning uses information to reach a conclusion, decision, explanation, or prediction.
+A premise is a statement used as support for a conclusion.
+A conclusion is a statement reached from premises or other information.
+An argument is a set of statements in which some statements are offered as reasons for another statement.
+A deductive argument aims to make its conclusion follow necessarily from its premises.
+An inductive argument uses observations or evidence to support a conclusion that is probable rather than guaranteed.
+An inference is a conclusion drawn from available information.
+A valid deductive argument has a structure in which true premises cannot lead to a false conclusion.
+A sound deductive argument is valid and has true premises.
+An invalid argument can have true premises and still have a false conclusion.
+An inductive argument can be strong or weak depending on how well its evidence supports its conclusion.
+A conditional statement has an if part and a then part.
+In a conditional statement, the antecedent is the condition and the consequent is the result.
+The statement if A then B means that A is sufficient for B and B is necessary for A.
+A biconditional states that two conditions are equivalent and can be written as A if and only if B.
+A conjunction combines statements with and.
+A disjunction combines statements with or.
+A negation reverses the truth value of a statement.
+A truth table lists possible truth values for logical statements and their combinations.
+In classical two-valued logic, a proposition is either true or false.
+The law of noncontradiction says a proposition cannot be both true and false in the same respect at the same time within classical logic.
+The law of excluded middle states that a proposition or its negation is true within classical two-valued logic.
+Modus ponens is a valid inference form: if A implies B, and A is true, then B follows.
+Modus tollens is a valid inference form: if A implies B, and B is false, then A must be false.
+Affirming the consequent is an invalid inference: from if A then B and B, one cannot conclude A.
+Denying the antecedent is an invalid inference: from if A then B and not A, one cannot conclude not B.
+A syllogism is a structured argument involving premises and a conclusion.
+A categorical statement makes a claim about a class or category.
+A counterexample is an example that disproves a universal claim.
+A proof establishes a mathematical or logical statement from accepted assumptions and valid reasoning.
+A proof by contradiction assumes the opposite of a desired conclusion and derives a contradiction.
+Proof by induction establishes a statement for a sequence of cases using a base case and an inductive step.
+A necessary condition must be present for something to occur.
+A sufficient condition is enough to guarantee something under the stated rules.
+Correlation means variables change together in some pattern.
+Correlation alone does not establish causation.
+Causation means a change in one factor contributes to a change in another under a specified causal relationship.
+A confounding variable can influence both variables being compared and make a relationship misleading.
+An assumption is something accepted temporarily or implicitly for the purpose of reasoning.
+Hidden assumptions can make an argument weaker if they are unsupported.
+An ambiguity occurs when a statement has multiple plausible interpretations.
+A contradiction occurs when statements cannot all be true under the same interpretation.
+Consistency means statements or observations do not conflict within a specified system.
+An analogy can help explain a relationship but does not prove that two situations are identical.
+An appeal to popularity treats popularity as evidence of truth without sufficient justification.
+An appeal to authority can be reasonable when the authority is relevant and reliable, but authority alone does not guarantee a claim.
+A straw man changes or weakens another person's position and then attacks the altered version.
+A false dilemma presents too few options when more possibilities exist.
+Circular reasoning uses a conclusion as support for itself.
+A hasty generalization draws a broad conclusion from insufficient evidence.
+Cherry-picking selects evidence while ignoring relevant evidence that points another way.
+Confirmation bias is the tendency to favor information that supports existing beliefs.
+A good reasoner actively checks for evidence that could challenge a preferred conclusion.
+Evidence should be evaluated for relevance, reliability, quantity, quality, and context.
+A claim should be separated from the evidence offered to support it.
+A conclusion should not be more certain than the evidence justifies.
+Uncertainty is a normal part of reasoning when information is incomplete.
+Probability can represent uncertainty about events or hypotheses.
+Expected value combines possible outcomes with their probabilities in a mathematical model.
+Bayesian reasoning updates the relative plausibility of hypotheses using evidence and prior information.
+A prior represents beliefs or probabilities before considering new evidence.
+A likelihood describes how compatible observed evidence is with a hypothesis under a model.
+A posterior represents an updated probability after evidence is considered.
+A decision can be rationally evaluated by comparing possible outcomes, probabilities, goals, and constraints.
+Optimization means seeking the best result according to a defined objective and constraints.
+A trade-off occurs when improving one objective makes another objective harder to improve.
+A constraint limits which solutions are possible.
+Decomposition breaks a complex problem into smaller subproblems.
+Abstraction removes unnecessary details while keeping information relevant to the task.
+Pattern recognition identifies repeated structures or relationships.
+Algorithmic reasoning describes a problem-solving process as ordered steps.
+A heuristic is a practical rule or strategy that can find useful solutions without guaranteeing the best possible result.
+A brute-force method checks many or all possible candidates when that is feasible.
+A greedy algorithm repeatedly chooses an option that appears best at the current step.
+A greedy choice is not always globally optimal.
+A search problem asks how to find a desired state or solution among possibilities.
+A state represents the relevant condition of a system at a particular point.
+A goal describes a desired state or outcome.
+A plan is a sequence of actions intended to reach a goal.
+Backtracking explores choices and reverses a choice when it leads to an invalid or unsuccessful path.
+Debugging is a form of reasoning in which observations and tests are used to identify causes of unexpected behavior.
+A hypothesis is a proposed explanation that can be tested against evidence.
+An experiment changes or observes variables in a controlled way to test a hypothesis.
+A prediction is an expected observation that follows from a hypothesis or model.
+Reproducibility means that a result can be obtained again using the specified method and conditions.
+A model is a simplified representation of a system.
+Models are useful because they focus on selected relationships rather than representing every detail.
+A model can be useful while still being incomplete.
+Good reasoning distinguishes observations from interpretations.
+An observation is information obtained through measurement or direct sensing.
+An interpretation explains what an observation might mean.
+A conclusion should account for alternative explanations when they are plausible.
+If two explanations make different predictions, observations can help distinguish between them.
+Reasoning from examples can suggest a pattern, but more evidence may be needed before treating it as a general rule.
