@@ -1,1 +1,24 @@
-
+Animals are living organisms.
+Animals need energy to survive.
+Animals can be divided into many different groups.
+Mammals are animals that usually have hair or fur.
+Dogs are mammals.
+Cats are mammals.
+Humans are mammals.
+Birds have feathers.
+Birds have beaks.
+Fish live in water and use gills to breathe.
+Reptiles usually have scales.
+Snakes are reptiles.
+Lizards are reptiles.
+Amphibians can live on land and in water.
+Frogs are amphibians.
+Insects have six legs.
+Ants are insects.
+Bees are insects.
+Spiders are not insects.
+Spiders have eight legs.
+Animals can eat plants, other animals, or both.
+Herbivores mainly eat plants.
+Carnivores mainly eat other animals.
+Omnivores eat both plants and animals.
