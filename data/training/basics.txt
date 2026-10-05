@@ -1,24 +1,176 @@
-Animals are living organisms.
+Animals are living organisms that can sense and respond to their environment.
 Animals need energy to survive.
+Animals obtain energy by eating food or by consuming other organisms.
+Animals need water directly or indirectly for life.
 Animals can be divided into many different groups.
-Mammals are animals that usually have hair or fur.
+Vertebrates are animals with a backbone.
+Invertebrates are animals without a backbone.
+Mammals are vertebrate animals that have hair or fur and produce milk for their young.
+Most mammals give birth to live young.
 Dogs are mammals.
 Cats are mammals.
 Humans are mammals.
-Birds have feathers.
-Birds have beaks.
-Fish live in water and use gills to breathe.
-Reptiles usually have scales.
+Elephants are mammals.
+Whales are mammals.
+Dolphins are mammals.
+Bats are mammals and are the only mammals capable of true powered flight.
+Kangaroos are mammals.
+Koalas are mammals.
+Platypuses are mammals that lay eggs.
+Birds are vertebrates with feathers.
+Birds have beaks and lay eggs.
+Most birds can fly, but some birds cannot fly.
+Penguins are birds that cannot fly and are adapted for swimming.
+Emus are large flightless birds.
+Ostriches are the largest living birds.
+Eagles are birds of prey.
+Owls are birds of prey that are adapted to hunting, often at night.
+Fish are vertebrates that generally live in water.
+Many fish use gills to extract oxygen from water.
+Fish have fins that help them move and steer.
+Sharks are fish.
+Rays are fish.
+Goldfish are fish.
+Reptiles are vertebrates with scales or scaly skin.
+Most reptiles are ectothermic, meaning they rely heavily on environmental heat to regulate body temperature.
 Snakes are reptiles.
 Lizards are reptiles.
-Amphibians can live on land and in water.
+Turtles are reptiles.
+Tortoises are reptiles.
+Crocodiles are reptiles.
+Amphibians are vertebrates that commonly have life stages associated with both water and land.
+Many amphibians begin life in water.
 Frogs are amphibians.
-Insects have six legs.
+Toads are amphibians.
+Salamanders are amphibians.
+Insects are invertebrates with six legs.
+Insects have three main body sections: head, thorax, and abdomen.
+Many adult insects have wings.
 Ants are insects.
 Bees are insects.
+Wasps are insects.
+Butterflies are insects.
+Moths are insects.
+Beetles are insects.
+Flies are insects.
+Mosquitoes are insects.
+Grasshoppers are insects.
 Spiders are not insects.
-Spiders have eight legs.
-Animals can eat plants, other animals, or both.
+Spiders are arachnids.
+Arachnids have eight legs.
+Scorpions are arachnids.
+Ticks are arachnids.
+Crabs are crustaceans.
+Lobsters are crustaceans.
+Shrimp are crustaceans.
+Octopuses are mollusks.
+Squids are mollusks.
+Snails are mollusks.
+Jellyfish are cnidarians, not fish.
+Corals are cnidarians.
+Earthworms are annelid worms.
+Animals have different ways of moving.
+Some animals walk.
+Some animals run.
+Some animals swim.
+Some animals fly.
+Some animals crawl.
+Some animals hop.
+Some animals burrow.
+Animals have different body coverings.
+Mammals commonly have hair or fur.
+Birds have feathers.
+Many reptiles have scales.
+Fish commonly have scales.
+Some animals have shells.
+Animals have different senses.
+Animals may use sight to detect light and objects.
+Animals may use hearing to detect sound.
+Animals may use smell to detect chemicals in the environment.
+Animals may use taste to detect chemicals in food.
+Animals may use touch to detect physical contact and pressure.
+Some animals have senses that humans do not have in the same form.
+Bats use echolocation to help navigate and locate objects.
+Dolphins also use echolocation.
+Some snakes can detect infrared radiation from warm objects.
+Many migratory animals use environmental cues to navigate.
+Animals communicate in many different ways.
+Animals can communicate using sounds.
+Animals can communicate using body movements.
+Animals can communicate using colors and patterns.
+Animals can communicate using chemicals and scents.
+Bees can use movements to communicate information about food locations.
+Birds use songs and calls for communication.
+Whales use sounds to communicate over long distances.
+Animals have different diets.
 Herbivores mainly eat plants.
 Carnivores mainly eat other animals.
 Omnivores eat both plants and animals.
+Some animals are scavengers that feed on remains of dead organisms.
+Some animals are predators that hunt other animals.
+Some animals are prey for other animals.
+A food chain describes how energy and nutrients move between organisms through feeding.
+A food web connects multiple food chains in an ecosystem.
+Animals are part of ecosystems.
+An ecosystem contains living organisms and their physical environment.
+Habitats are places where animals live.
+Forests provide habitats for many animals.
+Grasslands provide habitats for many animals.
+Deserts provide habitats for animals adapted to dry conditions.
+Oceans provide habitats for marine animals.
+Wetlands provide habitats for many birds, amphibians, fish, and invertebrates.
+Animals adapt to their environments over generations.
+Camouflage can help an animal avoid detection.
+Some animals have protective coloration.
+Some animals have physical defenses such as shells, spines, or armor.
+Some animals use speed to escape predators.
+Some animals use venom or poison as a defense or to capture prey.
+Animals can form social groups.
+Wolves can live in social groups called packs.
+Lions can live in social groups called prides.
+Elephants can live in family groups.
+Many primates live in social groups.
+Some animals are mostly solitary.
+Animals reproduce in different ways.
+Many animals reproduce sexually.
+Some animals lay eggs.
+Some animals give birth to live young.
+Many animals care for their young.
+Parental care varies greatly between species.
+Animal life spans vary greatly between species.
+Some animals live for only a short time.
+Some animals can live for many decades.
+Animal behavior can be influenced by genes and the environment.
+Animals learn in different ways.
+Some animals can learn through experience.
+Some animals use tools.
+Chimpanzees can use simple tools.
+Some birds can use tools to obtain food.
+Octopuses are capable of complex behaviors and learning.
+Animal intelligence varies and is difficult to measure with a single scale.
+Animals can be nocturnal, meaning they are mainly active at night.
+Animals can be diurnal, meaning they are mainly active during the day.
+Some animals are crepuscular, meaning they are most active around dawn and dusk.
+Hibernation is a state of greatly reduced activity and metabolism used by some animals during difficult conditions.
+Migration is the movement of animals between areas, often at particular times of the year.
+Many birds migrate.
+Some mammals migrate.
+Some marine animals migrate.
+Animals can be affected by changes in their environment.
+Pollution can harm animals and their habitats.
+Habitat loss can reduce animal populations.
+Climate changes can affect animal ranges and food availability.
+Conservation aims to protect species, habitats, and biodiversity.
+Biodiversity means the variety of living organisms in an area or on Earth.
+Endangered species face a high risk of extinction.
+Extinction occurs when a species no longer exists anywhere on Earth.
+Australia has many unique animals.
+The kangaroo is a well-known Australian marsupial.
+Koalas are marsupials native to Australia.
+Wombats are marsupials.
+Echidnas are egg-laying mammals called monotremes.
+The platypus is an Australian monotreme.
+The emu is a large flightless Australian bird.
+The saltwater crocodile is a large reptile found in northern Australia.
+The great white shark is a large predatory fish found in Australian waters.
+Animals are diverse, and different species have different structures, behaviors, habitats, diets, and life cycles.
