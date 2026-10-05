@@ -1,0 +1,22 @@
+name: Prototype tokenizer tests
+
+on:
+  push:
+    paths:
+      - "tokenizer.py"
+      - "tests/test_tokenizer.py"
+  pull_request:
+    paths:
+      - "tokenizer.py"
+      - "tests/test_tokenizer.py"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run tokenizer tests
+        run: python -m unittest tests.test_tokenizer -v
