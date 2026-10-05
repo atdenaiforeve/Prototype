@@ -1,0 +1,83 @@
+A tool is a capability that allows software to perform an operation outside simple text generation.
+An agent is a system that can observe information, reason about a goal, choose actions, use tools, and evaluate results.
+An AI agent can contain a model, memory, tools, a planner, a state representation, and an execution loop.
+The model can interpret instructions and propose actions.
+Memory can provide relevant information from previous interactions or stored knowledge.
+A tool can perform a specific operation such as reading a file, searching information, calculating a value, or editing an artifact.
+A tool interface defines what inputs a tool accepts and what output it returns.
+A planner decomposes a large goal into smaller steps.
+A plan is useful when a task has dependencies or multiple operations.
+A dependency means one step requires the result of another step.
+An execution loop can follow a pattern such as observe, plan, act, inspect, and revise.
+Observation provides information about the current state.
+An action changes the state of a system or requests an operation.
+A result is the output produced by an action.
+Verification checks whether an action produced the intended result.
+A failed action should be recognized as failed rather than reported as successful.
+An agent can retry an operation when retrying is safe and likely to help.
+An agent should avoid endless retries by using bounded attempts or stopping conditions.
+A stopping condition determines when an agent should stop acting.
+A goal state represents successful completion of a task.
+A state representation records information needed for planning and decision-making.
+A tool call should provide valid inputs according to the tool's interface.
+Tool outputs should be treated as observations that can contain useful information or errors.
+An agent can chain tools when one tool's output becomes another tool's input.
+A file-reading tool can provide the contents of an existing artifact.
+A file-writing tool can create or modify an artifact.
+A calculator can perform exact numerical operations more reliably than mental estimation.
+A search tool can retrieve current or external information when appropriate.
+A code execution tool can run programs and inspect their results.
+Different tools should be selected according to the actual task rather than used unnecessarily.
+Tool use can reduce errors when a task depends on exact external information.
+A permission boundary controls what actions an agent is allowed to perform.
+An agent should not assume permission for actions that have not been authorized.
+A destructive action should be treated more carefully than a reversible action.
+A reversible operation can usually be undone or restored.
+A backup or checkpoint can provide recovery after a change.
+Least privilege means giving a system only the access required for its task.
+Authentication verifies an identity or credential.
+Authorization determines what an authenticated identity is allowed to do.
+Secrets such as passwords and private keys should be protected and not exposed unnecessarily.
+An agent should avoid storing sensitive information unless it is necessary and appropriately protected.
+Safety constraints can limit actions that could cause harm.
+A sandbox can isolate program execution from important parts of a system.
+An agent can use structured outputs to make tool selection and data exchange more reliable.
+Schemas describe the expected structure of data.
+Validation checks whether an input or output matches its expected structure and constraints.
+Logging records useful information about operations and outcomes.
+Telemetry can provide measurements about system behavior.
+A trace can show a sequence of operations performed during a task.
+Observability helps developers understand what a system did and why a failure occurred.
+A feedback loop uses results to improve future decisions.
+An agent can compare its result with the original goal before finishing.
+Self-evaluation can identify possible errors, but important claims may still require external verification.
+Planning should not be confused with guaranteed correctness.
+A model can propose a plan that must still be checked for feasibility.
+Tool choice can be treated as a decision problem involving usefulness, cost, latency, and reliability.
+Parallel work can reduce total time when tasks are independent and tools support parallel execution.
+Sequential work is required when a later step depends on an earlier result.
+Concurrency means multiple operations can be in progress at the same time.
+Rate limits restrict how frequently a service can be called.
+Caching can avoid repeated retrieval of information that has not changed.
+A deterministic operation should produce the same result for the same inputs when its environment is unchanged.
+A random or probabilistic operation may produce different valid results on different runs.
+An agent can maintain state between actions so it knows what has already been completed.
+State should be updated after successful actions.
+An agent should distinguish planned actions from completed actions.
+A task queue stores work that is waiting to be processed.
+A scheduler determines when tasks should run.
+An event can trigger an agent workflow.
+A conditional workflow runs an action only when a specified condition is met.
+An autonomous system can operate with less direct human intervention, but autonomy does not guarantee correctness.
+Human oversight can provide approval, correction, and accountability.
+A human-in-the-loop system asks a person to review or approve selected actions.
+A human-on-the-loop system allows automated operation while providing monitoring and intervention.
+A good agent architecture makes important assumptions and state visible enough to debug.
+Agent memory can store previous results, but old results should be checked when the world may have changed.
+External information can become stale.
+A current search or direct observation may be more appropriate than relying on an old memory.
+A tool can fail because of invalid input, unavailable services, permissions, network problems, or internal errors.
+An agent should handle tool errors explicitly.
+Fallback behavior provides another way to proceed when a preferred tool fails.
+Graceful failure means stopping or degrading safely rather than producing misleading success.
+A reliable agent values correctness and verification over simply completing the most actions.
