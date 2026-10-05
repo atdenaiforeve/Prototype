@@ -1,0 +1,97 @@
+Space is the vast region beyond Earth's atmosphere.
+The observable universe contains enormous numbers of galaxies.
+A galaxy is a large system of stars, gas, dust, and other material held together by gravity.
+The Milky Way is the galaxy that contains our Solar System.
+The Solar System is the system of the Sun and the objects that orbit it.
+The Sun is a star at the center of the Solar System.
+The Sun contains most of the mass of the Solar System.
+The Sun produces energy through nuclear fusion in its core.
+Nuclear fusion combines light atomic nuclei into heavier nuclei and releases energy.
+The Sun's energy provides most of the energy that powers Earth's surface systems.
+A planet is a large body that orbits a star and meets the accepted criteria for its planetary classification.
+The eight planets of our Solar System are Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, and Neptune.
+Mercury is the closest planet to the Sun.
+Venus has a very thick atmosphere and is the hottest planet in the Solar System at its surface.
+Earth has abundant surface liquid water and supports known life.
+Mars is a rocky planet with a thin atmosphere and evidence of ancient water activity.
+Jupiter is the largest planet in the Solar System.
+Saturn is famous for its extensive ring system.
+Uranus rotates with an extreme axial tilt and is an ice giant.
+Neptune is the farthest recognized planet from the Sun.
+The four inner planets are rocky planets.
+Jupiter and Saturn are gas giants.
+Uranus and Neptune are ice giants.
+Dwarf planets are smaller bodies that orbit the Sun and meet some but not all of the criteria used to define a planet.
+Pluto is a dwarf planet in the Kuiper Belt.
+The Kuiper Belt is a region beyond Neptune containing many icy bodies.
+Asteroids are rocky or metallic objects that orbit the Sun.
+Many asteroids are found in the asteroid belt between Mars and Jupiter.
+Comets contain ice, dust, and rocky material.
+A comet can develop a glowing coma and tail when solar heating releases material near the Sun.
+Meteoroids are relatively small objects traveling through space.
+A meteor is the visible streak produced when a meteoroid enters an atmosphere and heats the surrounding gas.
+A meteorite is a space rock that survives passage through an atmosphere and reaches the ground.
+Moons are natural satellites that orbit planets, dwarf planets, or other bodies.
+Earth's Moon is Earth's natural satellite.
+The Moon's gravity contributes strongly to Earth's ocean tides.
+The Moon rotates and orbits Earth at rates that keep nearly the same side facing Earth.
+The phases of the Moon result from changing viewing angles of the illuminated half of the Moon.
+A solar eclipse occurs when the Moon passes between Earth and the Sun from a suitable alignment.
+A lunar eclipse occurs when Earth passes between the Sun and Moon from a suitable alignment.
+Gravity is the attraction between objects with mass.
+Gravity keeps planets in orbit around stars and moons in orbit around planets.
+An orbit is the curved path of an object under the influence of gravity and its motion.
+Objects in orbit are continuously falling around the body they orbit.
+A light-year is a unit of distance equal to the distance light travels in one year.
+A light-year is a distance unit, not a unit of time.
+Light travels extremely quickly, but it still takes time to cross astronomical distances.
+Looking far into space allows astronomers to see objects as they were in the past because their light takes time to travel.
+A star is a massive object made mostly of hot plasma that produces energy through nuclear processes.
+Stars form when gravity causes clouds of gas and dust to collapse.
+A protostar is a developing star before sustained hydrogen fusion begins in its core.
+The mass of a star strongly affects its temperature, brightness, lifetime, and eventual fate.
+Stars can have different colors related to their surface temperatures.
+Blue-white stars are generally hotter than red stars.
+Stars spend much of their lives in a stage where hydrogen is fused into helium in their cores.
+The Sun is currently in this long-lived main-sequence stage.
+When stars use up core hydrogen, their structures can change and they can become giant or supergiant stars.
+The final evolution of a star depends strongly on its mass.
+Some stars end as white dwarfs.
+A white dwarf is the dense remnant of a low- or intermediate-mass star.
+A supernova is a powerful stellar explosion or explosive stellar event.
+Some massive stars can leave behind neutron stars after supernova explosions.
+A neutron star is an extremely dense stellar remnant made mostly of neutrons.
+A black hole is a region of spacetime where gravity is so strong that beyond its event horizon nothing, including light, can escape.
+The event horizon is a boundary around a black hole.
+Black holes can have different masses and can form through several astrophysical processes.
+Supermassive black holes are found at the centers of many galaxies.
+Nebulae are clouds of gas and dust in space.
+Nebulae can be places where stars form or can be remnants of dying stars.
+Star clusters are groups of stars held together by gravity.
+A constellation is a pattern of stars as seen from Earth and does not usually mean the stars are physically close to one another.
+The zodiac is a set of constellations and sky regions associated with the apparent path of the Sun.
+A galaxy can have billions or more stars.
+Galaxies can have spiral, elliptical, irregular, and other structures.
+The Milky Way is a barred spiral galaxy.
+Galaxies can interact and merge through gravity.
+The universe is expanding.
+The expansion of the universe means that on large scales distant galaxies are generally moving farther apart as space expands.
+Dark matter is a name for unseen matter inferred from gravitational effects.
+Dark energy is a name for the component associated with the observed accelerated expansion of the universe.
+Astronomy is the scientific study of objects and phenomena beyond Earth.
+Astronomers use telescopes to collect electromagnetic radiation and study distant objects.
+Different telescopes can observe different wavelengths such as radio, infrared, visible, ultraviolet, X-rays, and gamma rays.
+Space telescopes can observe wavelengths that Earth's atmosphere blocks or weakens.
+Spectroscopy can reveal information about the composition, temperature, motion, and other properties of astronomical objects.
+The Doppler effect can cause observed wavelengths to shift when an object and observer move relative to one another.
+Redshift can indicate that light has been shifted toward longer wavelengths.
+Space is not completely empty; it contains gas, dust, radiation, particles, magnetic fields, and other phenomena.
+Human spacecraft can carry instruments, satellites, rovers, and people.
+Artificial satellites orbit Earth or other bodies for communication, navigation, science, weather observation, and other purposes.
+The International Space Station is a crewed laboratory in low Earth orbit.
+Space probes can travel to and study distant planets, moons, asteroids, comets, and other objects.
+Robotic rovers have explored the surfaces of Mars and other planetary bodies.
+Astronauts are people trained to travel and work in space.
+Microgravity changes how people and objects behave compared with Earth's surface.
+Earth is protected from much harmful space radiation by its atmosphere and magnetic field.
+The universe contains many different environments, and scientists continue to discover new objects and phenomena.
