@@ -1,0 +1,124 @@
+"""Inference utilities for Prototype.
+
+This layer sits between the trained model and the future chat interface.
+It handles checkpoint loading and controlled next-token generation without
+requiring a chat UI.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import torch
+
+from model import PrototypeLanguageModel
+from tokenizer import Tokenizer
+
+
+def load_checkpoint(
+    checkpoint_path: Path | str,
+    tokenizer_path: Path | str = "vocabulary.json",
+) -> tuple[PrototypeLanguageModel, Tokenizer, torch.device]:
+    """Load a trained Prototype checkpoint and its matching tokenizer."""
+    checkpoint_path = Path(checkpoint_path)
+    if not checkpoint_path.exists():
+        raise FileNotFoundError(f"checkpoint does not exist: {checkpoint_path}")
+
+    checkpoint = torch.load(
+        checkpoint_path,
+        map_location="cpu",
+        weights_only=False,
+    )
+
+    tokenizer = Tokenizer(model_path=tokenizer_path)
+    vocab_size = int(checkpoint["vocab_size"])
+    context_size = int(checkpoint["context_size"])
+
+    if tokenizer.vocabulary_size != vocab_size:
+        raise ValueError(
+            "tokenizer vocabulary does not match checkpoint: "
+            f"{tokenizer.vocabulary_size} != {vocab_size}"
+        )
+
+    model = PrototypeLanguageModel(
+        vocab_size=vocab_size,
+        embedding_size=int(checkpoint.get("embedding_size", 256)),
+        hidden_size=int(checkpoint.get("hidden_size", 1024)),
+        context_size=context_size,
+        num_layers=int(checkpoint.get("num_layers", 4)),
+        num_heads=int(checkpoint.get("num_heads", 8)),
+        dropout=float(checkpoint.get("dropout", 0.1)),
+    )
+    model.load_state_dict(checkpoint["model_state_dict"])
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
+    model.eval()
+    return model, tokenizer, device
+
+
+@torch.no_grad()
+def generate(
+    model: PrototypeLanguageModel,
+    tokenizer: Tokenizer,
+    prompt: str,
+    max_new_tokens: int = 32,
+    temperature: float = 0.8,
+    top_k: int = 20,
+) -> str:
+    """Generate a short continuation from a prompt."""
+    if max_new_tokens < 1:
+        raise ValueError("max_new_tokens must be positive")
+    if temperature <= 0:
+        raise ValueError("temperature must be positive")
+    if top_k < 1:
+        raise ValueError("top_k must be positive")
+
+    ids = tokenizer.encode(prompt, add_boundaries=False)
+    if not ids:
+        ids = [2]  # <BOS>
+
+    generated = list(ids)
+
+    for _ in range(max_new_tokens):
+        context = generated[-model.context_size:]
+        input_ids = torch.tensor([context], dtype=torch.long, device=next(model.parameters()).device)
+        logits = model(input_ids)[0, -1, :] / temperature
+
+        k = min(top_k, logits.numel())
+        values, indices = torch.topk(logits, k)
+        probabilities = torch.softmax(values, dim=-1)
+        next_index = torch.multinomial(probabilities, num_samples=1)
+        next_token = int(indices[next_index].item())
+
+        generated.append(next_token)
+
+        if next_token == 3:  # <EOS>
+            break
+
+    return tokenizer.decode(generated)
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Generate text with Prototype.")
+    parser.add_argument("prompt")
+    parser.add_argument("--checkpoint", type=Path, default=Path("prototype_model.pt"))
+    parser.add_argument("--tokenizer", type=Path, default=Path("vocabulary.json"))
+    parser.add_argument("--max-new-tokens", type=int, default=32)
+    parser.add_argument("--temperature", type=float, default=0.8)
+    parser.add_argument("--top-k", type=int, default=20)
+    args = parser.parse_args()
+
+    model, tokenizer, _ = load_checkpoint(args.checkpoint, args.tokenizer)
+    print(
+        generate(
+            model,
+            tokenizer,
+            args.prompt,
+            max_new_tokens=args.max_new_tokens,
+            temperature=args.temperature,
+            top_k=args.top_k,
+        )
+    )
