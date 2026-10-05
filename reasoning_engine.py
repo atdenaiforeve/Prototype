@@ -29,9 +29,7 @@ def _score_monitor(monitor: ReasoningMonitor) -> float:
     log_probability = sum(
         math.log(max(event.probability, 1e-12)) for event in monitor.events
     )
-    length = len(monitor.events)
-    # Average log probability, mapped into (0, 1] for workspace confidence.
-    return max(0.0, min(1.0, math.exp(log_probability / length)))
+    return max(0.0, min(1.0, math.exp(log_probability / len(monitor.events))))
 
 
 def reason(
@@ -53,8 +51,6 @@ def reason(
     workspace = workspace or ReasoningWorkspace(max_hypotheses=candidates)
     workspace.clear()
 
-    best_monitor: ReasoningMonitor | None = None
-
     for index in range(candidates):
         monitor = ReasoningMonitor(lambda ids: str(ids[0]), top_k=top_k)
         output = generate_fn(
@@ -66,14 +62,13 @@ def reason(
         )
         score = _score_monitor(monitor)
         hypothesis = workspace.add_hypothesis(output, score)
+        summary = monitor.summary()
         workspace.add_evidence(
             hypothesis,
             f"candidate {index + 1}: average token confidence "
-            f"{monitor.summary()['average_probability']:.4f}; "
-            f"{monitor.summary()['steps']} generated steps",
+            f"{summary['average_probability']:.4f}; "
+            f"{summary['steps']} generated steps",
         )
-        if best_monitor is None or score > workspace.hypotheses[0].confidence:
-            best_monitor = monitor
 
     chosen = workspace.choose()
     return ReasoningResult(
