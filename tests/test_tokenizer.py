@@ -9,6 +9,7 @@ import unittest
 from pathlib import Path
 
 from tokenizer import SPECIAL_TOKENS, Tokenizer
+from vocabulary import Vocabulary
 
 
 class TokenizerTests(unittest.TestCase):
@@ -72,6 +73,16 @@ class TokenizerTests(unittest.TestCase):
             second = Tokenizer(model_path=path, vocab_limit=256, min_frequency=2)
             self.assertEqual(before_tokens, second.tokenize("Prototype learns language."))
             self.assertEqual(before_ids, second.encode("Prototype learns language."))
+
+    def test_vocabulary_wrapper_rebuilds_from_all_supplied_text(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "tokenizer.json"
+            vocabulary = Vocabulary(path)
+            vocabulary.learn_text("cats climb trees")
+            vocabulary.learn_text("dogs run")
+            decoded = vocabulary.decode(vocabulary.encode("dogs run"))
+            self.assertIn("dogs run", decoded)
+            self.assertNotIn("cats", vocabulary.tokenizer.frequencies)
 
     def test_word_boundaries_are_not_lost(self):
         decoded = self.tokenizer.decode(self.tokenizer.encode("cats climb trees"))
