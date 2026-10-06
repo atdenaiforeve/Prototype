@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import threading
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -129,7 +128,7 @@ class PrototypeChat:
         conversation_id: str | None = None,
         context: dict | None = None,
     ) -> dict:
-        """Receive a message from another AI through the authenticated gateway."""
+        """Receive a message from another AI through the public gateway."""
         sender = str(sender).strip()
         message = str(message).strip()
         if not sender:
@@ -186,15 +185,10 @@ def make_handler(chat: PrototypeChat):
             self.end_headers()
             self.wfile.write(data)
 
-        def _authorized_ai_request(self) -> bool:
-            configured_key = os.environ.get("PROTOTYPE_INBOUND_KEY", "").strip()
-            supplied_key = self.headers.get("X-Prototype-Key", "").strip()
-            return bool(configured_key) and supplied_key == configured_key
-
         def do_OPTIONS(self) -> None:
             self.send_response(204)
             self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Prototype-Key")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type")
             self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
             self.end_headers()
 
@@ -234,10 +228,6 @@ def make_handler(chat: PrototypeChat):
             }
             if parsed.path not in allowed:
                 self._send_json(404, {"error": "not found"})
-                return
-
-            if parsed.path == "/ai/message" and not self._authorized_ai_request():
-                self._send_json(401, {"error": "AI gateway authentication required"})
                 return
 
             try:
