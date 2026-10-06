@@ -56,7 +56,7 @@ const serverUrl=document.getElementById("serverUrl");
 const connect=document.getElementById("connect");
 const freeze=document.getElementById("freeze");
 let conversationId=null;
-let runtimeBase=localStorage.getItem("prototype_server_url")||"";
+let runtimeBase=localStorage.getItem("prototype_server_url")||window.location.origin;
 serverUrl.value=runtimeBase;
 let busy=false;
 let satelliteConnected=false;
@@ -73,7 +73,7 @@ function addMessage(text,kind){
 
 async function checkRuntime(){
   if(!runtimeBase){
-    status.textContent="Satellite disconnected — enter the Prototype server URL";
+    status.textContent="⚪ Prototype disconnected";
     input.disabled=true; send.disabled=true; return;
   }
   try{
