@@ -36,7 +36,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 <body>
 <main class="app">
 <header id="header">Prototype — Self-Modelling AI</header>
-<div class="status" id="status">Satellite disconnected</div>
+<div class="status" id="status">🔴 SATELLITE DISCONNECTED</div>
 <div class="server-bar" id="serverBar"><input id="serverUrl" autocomplete="url" placeholder="Prototype server HTTPS URL" aria-label="Prototype server URL"><button id="connect" type="button">Connect</button><button id="freeze" type="button">🔒 Freeze</button></div>
 <section class="chat" id="chat" aria-live="polite">
 <div class="empty" id="empty">Chat area ready.<br><small>Prototype is connecting to its local runtime.</small></div>
@@ -59,6 +59,7 @@ let conversationId=null;
 let runtimeBase=localStorage.getItem("prototype_server_url")||"";
 serverUrl.value=runtimeBase;
 let busy=false;
+let satelliteConnected=false;
 
 function addMessage(text,kind){
   empty?.remove();
@@ -78,13 +79,15 @@ async function checkRuntime(){
   try{
     const response=await fetch(runtimeBase+"/health",{cache:"no-store"});
     if(!response.ok) throw new Error("runtime unavailable");
-    status.textContent="🟢 Prototype satellite online";
+    satelliteConnected=true;
+    status.textContent="🟢 SATELLITE CONNECTED · Prototype online";
     try{const s=await fetch(runtimeBase+"/self-update/status",{cache:"no-store"});if(s.ok){const d=await s.json();freeze.textContent=d.frozen?"🔒 Frozen":"🔒 Freeze";}}catch{}
     input.disabled=false;
     send.disabled=false;
     input.focus();
   }catch(error){
-    status.textContent="🔴 Satellite offline — check Codespaces server";
+    satelliteConnected=false;
+    status.textContent="🔴 SATELLITE OFFLINE · check Codespaces server";
     input.disabled=true;
     send.disabled=true;
   }
@@ -147,6 +150,19 @@ freeze.addEventListener("click",async()=>{
 serverUrl.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();connect.click();}});
 checkRuntime();
 setInterval(checkRuntime,10000);
+
+async function pollAutonomousMessages(){
+  if(!runtimeBase || !conversationId || !satelliteConnected)return;
+  try{
+    const response=await fetch(runtimeBase+"/autonomous/messages?conversation_id="+encodeURIComponent(conversationId),{cache:"no-store"});
+    if(!response.ok)return;
+    const data=await response.json();
+    for(const message of (data.messages||[])) addMessage(message,"ai");
+  }catch(error){
+    // Normal health polling reports the satellite connection state.
+  }
+}
+setInterval(pollAutonomousMessages,1000);
 
 (async()=>{
   const reloadIfNewer=async()=>{
