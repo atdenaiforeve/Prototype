@@ -50,5 +50,37 @@ document.getElementById("composer").addEventListener("submit",e=>{
   input.focus();
 });
 </script>
-</body>
+</body><script>
+(async()=>{
+  const reloadIfNewer=async()=>{
+    try{
+      const response=await fetch("generation.json?ts="+Date.now(),{cache:"no-store"});
+      if(!response.ok)return;
+      const state=await response.json();
+      const generation=Number(state.generation);
+      if(!Number.isFinite(generation))return;
+      const current=Number(document.documentElement.dataset.generation ?? generation);
+      if(!document.documentElement.dataset.generation){
+        document.documentElement.dataset.generation=String(generation);
+        const header=document.querySelector("header");
+        if(header) header.textContent="Prototype — Self-Modelling AI · Generation "+generation;
+        return;
+      }
+      if(generation>current){
+        document.documentElement.dataset.generation=String(generation);
+        document.querySelectorAll("button,input").forEach(el=>el.disabled=true);
+        const notice=document.createElement("div");
+        notice.textContent="New Prototype generation detected. Reloading…";
+        notice.style.cssText="position:fixed;inset:0;display:grid;place-items:center;background:#000;color:#fff;font:600 18px system-ui;z-index:9999";
+        document.body.appendChild(notice);
+        setTimeout(()=>location.reload(),500);
+      }
+    }catch(error){
+      console.warn("Generation check failed:",error);
+    }
+  };
+  await reloadIfNewer();
+  setInterval(reloadIfNewer,5000);
+})();
+</script>
 </html>
