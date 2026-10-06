@@ -12,7 +12,7 @@ class Vocabulary:
         self.tokenizer = Tokenizer(path)
 
     def learn_text(self, text: str) -> list[str]:
-        """Add tokens from text to the vocabulary."""
+        """Rebuild the vocabulary from the supplied training text."""
         return self.tokenizer.learn(text)
 
     def encode(self, text: str) -> list[int]:
@@ -38,8 +38,9 @@ class Vocabulary:
 if __name__ == "__main__":
     vocabulary = Vocabulary()
 
-    vocabulary.learn_text("Prototype is learning language.")
-    vocabulary.learn_text("Language is made from tokens.")
+    vocabulary.learn_text(
+        "Prototype is learning language. Language is made from tokens."
+    )
 
     vocabulary.save()
 
