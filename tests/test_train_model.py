@@ -9,9 +9,9 @@ class TrainingDataTests(unittest.TestCase):
     def test_make_windows_aligns_next_token_targets(self):
         inputs, targets = make_windows([0, 1, 2, 3, 4], context_size=3)
         self.assertEqual(inputs.shape, targets.shape)
-        self.assertEqual(inputs.shape, (3, 3))
-        self.assertEqual(inputs.tolist(), [[0, 1, 2], [1, 2, 3], [2, 3, 4]])
-        self.assertEqual(targets.tolist(), [[1, 2, 3], [2, 3, 4], [3, 4, 5]])
+        self.assertEqual(inputs.shape, (2, 3))
+        self.assertEqual(inputs.tolist(), [[0, 1, 2], [1, 2, 3]])
+        self.assertEqual(targets.tolist(), [[1, 2, 3], [2, 3, 4]])
 
     def test_make_windows_rejects_invalid_stride(self):
         with self.assertRaises(ValueError):
