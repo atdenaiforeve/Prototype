@@ -221,7 +221,7 @@ class GitHubSelfUpdater:
         results = []
         for command in (
             ["python", "-m", "compileall", "-q", "."],
-            ["python", "-m", "pytest", "-q"],
+            ["python", "-m", "unittest", "discover", "-s", ".", "-p", "test_*.py"],
         ):
             try:
                 completed = subprocess.run(
@@ -236,9 +236,8 @@ class GitHubSelfUpdater:
                 })
             except (OSError, subprocess.TimeoutExpired) as exc:
                 results.append({"command": command, "returncode": None, "passed": False, "error": str(exc)})
-        pytest_missing = "No module named pytest" in str(results[1].get("stderr", ""))
         return {
-            "passed": bool(results[0]["passed"] and (results[1]["passed"] or pytest_missing)),
+            "passed": bool(results[0]["passed"] and results[1]["passed"]),
             "results": results,
         }
 
