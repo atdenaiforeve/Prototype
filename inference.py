@@ -1,9 +1,4 @@
-"""Inference utilities for Prototype.
-
-This layer sits between the trained model and the future chat interface.
-It handles checkpoint loading, controlled generation, and the bounded
-structured reasoning loop.
-"""
+"""Inference utilities for Prototype with optional long-term memory."""
 
 from __future__ import annotations
 
@@ -11,6 +6,8 @@ from pathlib import Path
 
 import torch
 
+from learning import LearningLoop
+from memory_context import build_prompt, format_memory_context
 from model import PrototypeLanguageModel
 from monitor import ReasoningMonitor, entropy
 from reasoning import ReasoningWorkspace
@@ -130,11 +127,25 @@ def reason_generate(
     max_new_tokens: int = 32,
     temperature: float = 0.8,
     top_k: int = 20,
+    memory: LearningLoop | None = None,
+    memory_limit: int = 3,
+    memory_max_chars: int = 400,
+    learn: bool = False,
 ) -> ReasoningResult:
-    """Generate several bounded candidates and let Prototype choose one."""
+    """Reason with relevant long-term memories and optionally record the result."""
+    if memory_limit < 0:
+        raise ValueError("memory_limit must not be negative")
+    learning = memory or LearningLoop()
+    memories = learning.retrieve(prompt, limit=memory_limit)
+    memory_context = format_memory_context(
+        memories,
+        max_chars=memory_max_chars,
+        max_memories=memory_limit,
+    )
+    candidate_prompt = build_prompt(prompt, memory_context)
     workspace = ReasoningWorkspace(max_hypotheses=candidates)
-    return reason(
-        prompt,
+    result = reason(
+        candidate_prompt,
         lambda candidate_prompt, **kwargs: generate(
             model,
             tokenizer,
@@ -147,6 +158,20 @@ def reason_generate(
         top_k=top_k,
         workspace=workspace,
     )
+    result.workspace["memory"] = {
+        "retrieved": len(memories),
+        "memories": [
+            {
+                "id": memory_item.get("id"),
+                "type": memory_item.get("memory_type"),
+                "relevance_score": memory_item.get("relevance_score", 0.0),
+            }
+            for memory_item in memories
+        ],
+    }
+    if learn:
+        learning.record_result(prompt, result)
+    return result
 
 
 if __name__ == "__main__":
@@ -162,6 +187,8 @@ if __name__ == "__main__":
     parser.add_argument("--monitor", type=Path, default=None)
     parser.add_argument("--reason", action="store_true", help="Explore bounded candidates before choosing an answer.")
     parser.add_argument("--reasoning-candidates", type=int, default=3)
+    parser.add_argument("--memory", action="store_true", help="Use relevant long-term memories during reasoning.")
+    parser.add_argument("--learn", action="store_true", help="Record the selected result as an experience.")
     args = parser.parse_args()
 
     model, tokenizer, _ = load_checkpoint(args.checkpoint, args.tokenizer)
@@ -175,6 +202,8 @@ if __name__ == "__main__":
             max_new_tokens=args.max_new_tokens,
             temperature=args.temperature,
             top_k=args.top_k,
+            memory=LearningLoop() if args.memory or args.learn else None,
+            learn=args.learn,
         )
         print(result.output)
         print("\nReasoning decision:")
