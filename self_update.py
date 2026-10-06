@@ -120,7 +120,7 @@ class GitHubSelfUpdater:
             raise RuntimeError(f"GitHub connection error: {exc}") from exc
 
     def read_file(self, path: str) -> tuple[str, str]:
-        path = self._validated_path(path)
+        path = self._validated_read_path(path)
         encoded = urllib.parse.quote(path, safe="/")
         data = self._request(
             "GET",
@@ -212,7 +212,7 @@ class GitHubSelfUpdater:
 
     def inspect_file(self, path: str) -> dict:
         """Read one repository file and return a compact inspection record."""
-        path = self._validated_path(path)
+        path = self._validated_read_path(path)
         content, sha = self.read_file(path)
         return {
             "path": path,
@@ -244,7 +244,7 @@ class GitHubSelfUpdater:
 
         cleaned: list[str] = []
         for raw in paths:
-            path = cls._normalise_path(raw)
+            path = cls._validated_general_path(raw)
             parts = Path(path).parts
             filename = Path(path).name.lower()
 
@@ -266,10 +266,43 @@ class GitHubSelfUpdater:
             raise ValueError("An autonomous update may change at most 8 files at once.")
         return cleaned
 
+    @staticmethod
+    def _validated_general_path(raw: str) -> str:
+        if not isinstance(raw, str):
+            raise TypeError("repository path must be a string")
+        path = raw.replace("\\", "/").strip()
+        parts = Path(path).parts
+        if not path or path.startswith(("/", "~")) or ".." in parts:
+            raise ValueError(f"Unsafe repository path: {raw}")
+        return path
+
+    @classmethod
+    def validate_read_paths(cls, paths: list[str]) -> list[str]:
+        """Validate files Prototype may inspect without exposing secrets."""
+        if not isinstance(paths, list):
+            raise TypeError("paths must be a list")
+        cleaned: list[str] = []
+        for raw in paths:
+            path = cls._validated_general_path(raw)
+            filename = Path(path).name.lower()
+            lowered = path.lower()
+            if lowered.startswith(".git/"):
+                raise ValueError(f"Protected read path: {raw}")
+            if filename in PROTECTED_NAMES or filename.startswith(".env."):
+                raise ValueError(f"Protected read path: {raw}")
+            if path not in cleaned:
+                cleaned.append(path)
+        if len(cleaned) > 8:
+            raise ValueError("An inspection may include at most 8 files at once.")
+        return cleaned
+
+    @classmethod
+    def _validated_read_path(cls, path: str) -> str:
+        return cls.validate_read_paths([path])[0]
+
     @classmethod
     def _validated_path(cls, path: str) -> str:
-        paths = cls.validate_paths([path])
-        return paths[0]
+        return cls.validate_paths([path])[0]
 
     def build_proposal(
         self,
@@ -282,7 +315,7 @@ class GitHubSelfUpdater:
         if not intention:
             raise RuntimeError("No fresh self-update intention is available.")
         metadata = intention.get("metadata") or {}
-        files = self.validate_paths(candidate_files or [])
+        files = self.validate_read_paths(candidate_files or [])
         return UpdateProposal(
             intention_id=int(intention["id"]),
             goal=str(intention["content"]),
