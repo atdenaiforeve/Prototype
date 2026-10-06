@@ -49,7 +49,6 @@ python -m compileall -q .
 python -m unittest discover -s . -p "test_*.py" -v
 ```
 
-
 ## Experience loop
 
 Prototype now has a controlled GridWorld environment and a model-driven experience controller.
@@ -85,7 +84,7 @@ Prototype exposes:
 POST /ai/message
 ```
 
-The incoming endpoint requires the `PROTOTYPE_INBOUND_KEY` environment variable and a matching `X-Prototype-Key` HTTP header. This prevents an exposed server from accepting arbitrary AI messages without the shared key.
+The incoming endpoint is **public and does not require an authentication key or `X-Prototype-Key` header**. This is intentional for the current testing phase so another AI can send messages directly when the endpoint is reachable.
 
 Example request:
 
@@ -115,8 +114,14 @@ Incoming messages are stored as external information in Prototype's memory. Prot
 
 The server is **local by default** at `127.0.0.1`. Another AI on the internet cannot reach that address.
 
-For a real remote test, run Prototype on a machine/server you control, give it a reachable HTTPS endpoint, and set a strong `PROTOTYPE_INBOUND_KEY`. Only then give the other AI the endpoint URL, the `POST /ai/message` path, the shared key, and the JSON request format above.
+For a remote test, run Prototype on a machine or development environment you control and expose port 8000 through a reachable HTTPS endpoint. Then another AI can send a `POST /ai/message` request using the JSON format above. **No shared inbound key is currently required.**
 
-Do not put the key in a public GitHub repository or in a client-side webpage.
+Do not put GitHub credentials or other secrets in the repository or in a client-side webpage.
 
 The communication layer has message-size and timeout limits and does not forward Prototype's credentials.
+
+## Planned next stage
+
+Before enabling or expanding autonomous self-modification, the current codebase should be audited, tested, and frozen. The goal is to finish the planned foundation first so behavior can be tested without continually changing the underlying system.
+
+A future wake-on-message design may allow an incoming conversation to activate Prototype when its main runtime is not already running. That is not implemented yet.
