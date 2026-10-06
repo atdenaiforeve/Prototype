@@ -31,7 +31,7 @@ class GitHubSelfUpdater:
 
     def __init__(
         self,
-        repository: str = "atdenaiforever/Prototype",
+        repository: str = "atdenaiforeve/Prototype",
         branch: str = "main",
         token: str | None = None,
     ) -> None:
