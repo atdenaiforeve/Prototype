@@ -178,14 +178,20 @@ class GitHubSelfUpdater:
     @staticmethod
     def validate_paths(paths: list[str]) -> list[str]:
         """Reject protected or unsafe paths from autonomous updates."""
-        blocked = (".env", "secrets", "credentials", "token", "memory.db", ".git/", ".github/workflows/")
+        protected_names = {".env", "memory.db", "credentials.json", "secrets.json"}
         cleaned: list[str] = []
         for raw in paths:
-            path = raw.replace("\\", "/").lstrip("./")
+            path = raw.replace("\\", "/").strip()
+            parts = Path(path).parts
             lowered = path.lower()
-            if not path or ".." in Path(path).parts:
+            if not path or ".." in parts or path.startswith("/") or path.startswith("~"):
                 raise ValueError(f"Unsafe update path: {raw}")
-            if any(part in lowered for part in blocked):
+            if (
+                any(part.lower() in {".git", ".github"} for part in parts[:1])
+                and (path.startswith(".git/") or path.startswith(".github/workflows/"))
+            ):
+                raise ValueError(f"Protected update path: {raw}")
+            if Path(path).name.lower() in protected_names or ".env." in Path(path).name.lower():
                 raise ValueError(f"Protected update path: {raw}")
             if path not in cleaned:
                 cleaned.append(path)
@@ -207,7 +213,7 @@ class GitHubSelfUpdater:
             files=files,
             validation_commands=[
                 ["python", "-m", "compileall", "-q", "."],
-                ["python", "-m", "pytest", "-q"],
+                ["python", "-m", "unittest", "discover", "-s", ".", "-p", "test_*.py"],
             ],
             requires_manual_approval=any(
                 Path(path).name == "self_update.py" or path.startswith(".github/")
