@@ -18,7 +18,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent
-CHECK_INTERVAL = max(5, int(os.environ.get("PROTOTYPE_UPDATE_INTERVAL", "15")))
+CHECK_INTERVAL = max(2, int(os.environ.get("PROTOTYPE_UPDATE_INTERVAL", "2")))
 
 
 def run_git(*args: str) -> subprocess.CompletedProcess[str]:
