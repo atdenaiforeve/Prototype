@@ -240,7 +240,7 @@ class PrototypeChat:
         return self.chat(prompt_message, conversation_id=conversation_id)
 
 
-def make_handler(chat: PrototypeChat):
+def _read_generation() -> int:\n    try:\n        data = json.loads((ROOT / "generation.json").read_text(encoding="utf-8"))\n        return int(data.get("generation", 0))\n    except (OSError, ValueError, TypeError, json.JSONDecodeError):\n        return 0\n\n\ndef make_handler(chat: PrototypeChat):
     class Handler(BaseHTTPRequestHandler):
         server_version = "PrototypeChat/1.0"
 
@@ -277,7 +277,7 @@ def make_handler(chat: PrototypeChat):
         def do_GET(self) -> None:
             parsed = urlparse(self.path)
             if parsed.path == "/health":
-                self._send_json(200, {"status": "ok", "model_loaded": True})
+                self._send_json(200, {\n                    "status": "ok",\n                    "model_loaded": chat.model is not None and chat.tokenizer is not None,\n                    "generation": _read_generation(),\n                    "autonomous_conversations": len(chat.autonomous_started),\n                })
                 return
             if parsed.path == "/":
                 self._send_file(ROOT / "index.html")
@@ -399,7 +399,7 @@ def make_handler(chat: PrototypeChat):
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the Prototype chat server.")
-    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--checkpoint", type=Path, default=DEFAULT_CHECKPOINT)
     parser.add_argument("--tokenizer", type=Path, default=DEFAULT_TOKENIZER)
