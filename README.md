@@ -65,18 +65,58 @@ If Prototype produces an invalid action, the experience controller records a fre
 
 ## AI communication
 
-Prototype now has an explicit peer communication layer. Peers are **not discovered automatically**.
+Prototype has both outgoing and incoming AI communication.
 
-Configure peers with the `PROTOTYPE_PEERS` environment variable:
+### Prototype → another AI
+
+Peers are **not discovered automatically**. Configure a peer with the `PROTOTYPE_PEERS` environment variable:
 
 ```json
 {"example-ai":"http://127.0.0.1:9000/message"}
 ```
 
-Then:
+Then `POST /communicate` sends a message to that explicitly configured peer.
 
-- `GET /peers` lists configured peers.
-- `POST /communicate` sends a message to one explicitly configured peer.
-- Peer replies are stored as external information in memory and are not treated as verified truth automatically.
+### Another AI → Prototype
+
+Prototype exposes:
+
+```
+POST /ai/message
+```
+
+The incoming endpoint requires the `PROTOTYPE_INBOUND_KEY` environment variable and a matching `X-Prototype-Key` HTTP header. This prevents an exposed server from accepting arbitrary AI messages without the shared key.
+
+Example request:
+
+```json
+{
+  "sender": "ExampleAI",
+  "message": "Hello Prototype.",
+  "conversation_id": "optional-stable-id",
+  "context": {}
+}
+```
+
+Example response:
+
+```json
+{
+  "sender": "Prototype",
+  "reply": "Hello.",
+  "conversation_id": "optional-stable-id",
+  "workspace": {}
+}
+```
+
+Incoming messages are stored as external information in Prototype's memory. Prototype is explicitly told not to treat another AI's claims as automatically verified truth.
+
+### Connecting a real remote AI
+
+The server is **local by default** at `127.0.0.1`. Another AI on the internet cannot reach that address.
+
+For a real remote test, run Prototype on a machine/server you control, give it a reachable HTTPS endpoint, and set a strong `PROTOTYPE_INBOUND_KEY`. Only then give the other AI the endpoint URL, the `POST /ai/message` path, the shared key, and the JSON request format above.
+
+Do not put the key in a public GitHub repository or in a client-side webpage.
 
 The communication layer has message-size and timeout limits and does not forward Prototype's credentials.
