@@ -37,7 +37,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 <main class="app">
 <header id="header">Prototype — Self-Modelling AI</header>
 <div class="status" id="status">Satellite disconnected</div>
-<div class="server-bar" id="serverBar"><input id="serverUrl" autocomplete="url" placeholder="Prototype server HTTPS URL" aria-label="Prototype server URL"><button id="connect" type="button">Connect</button></div>
+<div class="server-bar" id="serverBar"><input id="serverUrl" autocomplete="url" placeholder="Prototype server HTTPS URL" aria-label="Prototype server URL"><button id="connect" type="button">Connect</button><button id="freeze" type="button">🔒 Freeze</button></div>
 <section class="chat" id="chat" aria-live="polite">
 <div class="empty" id="empty">Chat area ready.<br><small>Prototype is connecting to its local runtime.</small></div>
 </section>
@@ -54,6 +54,7 @@ const send=document.getElementById("send");
 const status=document.getElementById("status");
 const serverUrl=document.getElementById("serverUrl");
 const connect=document.getElementById("connect");
+const freeze=document.getElementById("freeze");
 let conversationId=null;
 let runtimeBase=localStorage.getItem("prototype_server_url")||"";
 serverUrl.value=runtimeBase;
@@ -78,6 +79,7 @@ async function checkRuntime(){
     const response=await fetch(runtimeBase+"/health",{cache:"no-store"});
     if(!response.ok) throw new Error("runtime unavailable");
     status.textContent="🟢 Prototype satellite online";
+    try{const s=await fetch(runtimeBase+"/self-update/status",{cache:"no-store"});if(s.ok){const d=await s.json();freeze.textContent=d.frozen?"🔒 Frozen":"🔒 Freeze";}}catch{}
     input.disabled=false;
     send.disabled=false;
     input.focus();
@@ -129,6 +131,18 @@ connect.addEventListener("click",()=>{
   conversationId=null;
   status.textContent="📡 Connecting to Prototype satellite…";
   checkRuntime();
+});
+
+freeze.addEventListener("click",async()=>{
+  if(!runtimeBase){status.textContent="Connect to the Prototype satellite first";return;}
+  freeze.disabled=true;
+  try{
+    const response=await fetch(runtimeBase+"/self-update/freeze",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||"freeze failed");
+    freeze.textContent="🔒 Frozen";
+    status.textContent="🔒 Prototype self-update is frozen";
+  }catch(error){freeze.disabled=false;status.textContent="Freeze failed: "+error.message;}
 });
 serverUrl.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();connect.click();}});
 checkRuntime();
