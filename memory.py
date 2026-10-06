@@ -243,6 +243,7 @@ class MemoryEngine:
     ) -> Optional[dict[str, Any]]:
         """Return the newest fresh self-update intention, or None if there isn't one."""
         now = _now()
+        freshness_seconds = max(1, int(freshness_seconds))
         with self._connect() as con:
             rows = con.execute(
                 """
@@ -261,7 +262,14 @@ class MemoryEngine:
                 status = str(metadata.get("status", "planned"))
                 if not include_completed and status in {"completed", "rejected", "expired"}:
                     continue
-                expires_at = float(metadata.get("expires_at", row["created_at"] + freshness_seconds))
+                try:
+                    recorded_expiry = float(
+                        metadata.get("expires_at", row["created_at"] + freshness_seconds)
+                    )
+                except (TypeError, ValueError):
+                    recorded_expiry = row["created_at"] + freshness_seconds
+                freshness_expiry = float(row["created_at"]) + freshness_seconds
+                expires_at = min(recorded_expiry, freshness_expiry)
                 if expires_at <= now:
                     if status not in {"completed", "rejected", "expired"}:
                         metadata["status"] = "expired"
