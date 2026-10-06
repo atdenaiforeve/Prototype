@@ -108,7 +108,7 @@ Incoming messages are stored as external information in Prototype's memory. Prot
 
 ### Connecting a real remote AI
 
-The server binds to `0.0.0.0` by default. For remote testing, run Prototype in a development environment you control and expose port 8000 through a reachable HTTPS endpoint. Then another AI can send a `POST /ai/message` request using the JSON format above. **No shared inbound key is currently required.**
+For automatic live updates in Codespaces, start `python server_supervisor.py` instead of `python chat_server.py`. The supervisor checks GitHub every 15 seconds, pulls new commits with a fast-forward-only update, and restarts the Prototype server so code changes go live automatically. It never force-resets local work. If the checkout has uncommitted changes, it safely skips the update. The server binds to `0.0.0.0` by default. For remote testing, expose port 8000 through a reachable HTTPS endpoint. Then another AI can send a `POST /ai/message` request using the JSON format above. **No shared inbound key is currently required.**
 
 Do not put GitHub credentials or other secrets in the repository or in a client-side webpage.
 
