@@ -50,6 +50,33 @@ class LearningLoopTests(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertIn("cats", results[0]["content"])
 
+    def test_empty_query_returns_no_memories(self):
+        self.memory.remember("Cats are animals.", memory_type="fact", confidence=0.9)
+        self.assertEqual(self.memory.recall("", limit=5), [])
+
+    def test_deduplication_respects_memory_type(self):
+        first = self.memory.remember("Same content.", memory_type="fact", confidence=0.9)
+        same_type = self.memory.remember("Same content.", memory_type="fact", confidence=0.9)
+        different_type = self.memory.remember("Same content.", memory_type="note", confidence=0.9)
+
+        self.assertEqual(first, same_type)
+        self.assertNotEqual(first, different_type)
+
+    def test_self_update_freshness_uses_requested_window(self):
+        intention_id = self.memory.remember_self_update_intention(
+            "Old update intention",
+            freshness_seconds=3600,
+        )
+        with self.memory._connect() as con:
+            con.execute(
+                "UPDATE memories SET created_at = created_at - 100 WHERE id = ?",
+                (intention_id,),
+            )
+
+        self.assertIsNone(
+            self.memory.latest_self_update_intention(freshness_seconds=10)
+        )
+
     def test_feedback_creates_correction(self):
         workspace = ReasoningWorkspace()
         hypothesis = workspace.add_hypothesis("Cats are animals.", 0.8)
