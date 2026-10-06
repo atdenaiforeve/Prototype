@@ -299,8 +299,9 @@ class GitHubSelfUpdater:
             created_at=int(time.time()),
         )
 
-    def validate_local_checkout(self, root: str | Path = ".") -> dict:
+    def validate_local_checkout(self, root: str | Path | None = None) -> dict:
         """Run syntax checks and tests without changing repository files."""
+        checkout = Path(root) if root is not None else Path(__file__).resolve().parent
         results = []
         for command in (
             ["python", "-m", "compileall", "-q", "."],
@@ -309,7 +310,7 @@ class GitHubSelfUpdater:
             try:
                 completed = subprocess.run(
                     command,
-                    cwd=str(root),
+                    cwd=str(checkout),
                     text=True,
                     capture_output=True,
                     timeout=120,
@@ -351,7 +352,6 @@ class GitHubSelfUpdater:
         )
         current_sha = ref["object"]["sha"]
 
-        encoded_backup = urllib.parse.quote(branch_name, safe="")
         try:
             self._request(
                 "POST",
