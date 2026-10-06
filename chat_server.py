@@ -73,6 +73,10 @@ class PrototypeChat:
         else:
             conversation_id = conversation_id.strip()
 
+        # Treat what the person explicitly tells Prototype as learnable
+        # experience. It is stored as what they said, not as an inferred fact.
+        self.learning.learn_from_user(message, conversation_id=conversation_id)
+
         with self.lock:
             history = self.conversations.setdefault(conversation_id, [])
             recent = history[-6:]
