@@ -131,6 +131,20 @@ class GitHubSelfUpdater:
             f"Prototype: advance to generation {generation}",
         )
 
+    def latest_intention(self, *, freshness_seconds: int = 24 * 60 * 60) -> dict | None:
+        """Read Prototype's newest fresh self-update intention from memory."""
+        from memory import get_memory
+
+        return get_memory().latest_self_update_intention(
+            freshness_seconds=freshness_seconds,
+        )
+
+    def mark_intention(self, memory_id: int, status: str) -> bool:
+        """Update the lifecycle status of a self-update intention."""
+        from memory import get_memory
+
+        return get_memory().set_self_update_intention_status(memory_id, status)
+
     def request_reload(self, generation: int) -> UpdateResult:
         return self.record_generation(
             generation=generation,
