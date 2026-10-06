@@ -9,8 +9,8 @@
 body{margin:0;min-height:100vh;background:#000;color:#e8e8e8;font:16px system-ui,-apple-system,Segoe UI,sans-serif;display:flex;justify-content:center}
 .app{width:min(900px,100%);min-height:100vh;display:flex;flex-direction:column;background:#050505}
 header{padding:18px 20px;border-bottom:1px solid #222;font-weight:600}
-.chat{flex:1;padding:20px;display:flex;flex-direction:column;gap:12px}
-.message{max-width:80%;padding:12px 14px;border:1px solid #242424;border-radius:10px;background:#0d0d0d}
+.chat{flex:1;padding:20px;display:flex;flex-direction:column;gap:12px;overflow:auto}
+.message{max-width:80%;padding:12px 14px;border:1px solid #242424;border-radius:10px;background:#0d0d0d;white-space:pre-wrap}
 .message.user{align-self:flex-end;background:#151515}
 .message.ai{align-self:flex-start}
 .composer{display:flex;gap:10px;padding:14px;border-top:1px solid #222;background:#050505}
@@ -19,38 +19,91 @@ input:focus{border-color:#666}
 button{border:1px solid #333;background:#151515;color:#fff;border-radius:8px;padding:0 18px;font:inherit;cursor:pointer}
 button:hover{background:#202020}
 button:disabled{opacity:.5;cursor:not-allowed}
+.status{padding:8px 20px;color:#777;font-size:13px;border-bottom:1px solid #171717}
 .empty{margin:auto;text-align:center;color:#777}
 </style>
 </head>
 <body>
 <main class="app">
-<header>Prototype — Self-Modelling AI</header>
+<header id="header">Prototype — Self-Modelling AI</header>
+<div class="status" id="status">Connecting to Prototype…</div>
 <section class="chat" id="chat" aria-live="polite">
-<div class="empty" id="empty">Chat area ready.<br><small>The AI connection will be added later.</small></div>
+<div class="empty" id="empty">Chat area ready.<br><small>Prototype is connecting to its local runtime.</small></div>
 </section>
 <form class="composer" id="composer">
 <input id="input" autocomplete="off" placeholder="Message Prototype…" aria-label="Message Prototype">
-<button type="submit">Send</button>
+<button id="send" type="submit">Send</button>
 </form>
 </main>
 <script>
 const chat=document.getElementById("chat");
 const empty=document.getElementById("empty");
 const input=document.getElementById("input");
-document.getElementById("composer").addEventListener("submit",e=>{
-  e.preventDefault();
-  const text=input.value.trim();
-  if(!text)return;
+const send=document.getElementById("send");
+const status=document.getElementById("status");
+let conversationId=null;
+let busy=false;
+
+function addMessage(text,kind){
   empty?.remove();
   const msg=document.createElement("div");
-  msg.className="message user";
+  msg.className="message "+kind;
   msg.textContent=text;
   chat.appendChild(msg);
+  chat.scrollTop=chat.scrollHeight;
+  return msg;
+}
+
+async function checkRuntime(){
+  try{
+    const response=await fetch("/health",{cache:"no-store"});
+    if(!response.ok) throw new Error("runtime unavailable");
+    status.textContent="Prototype online";
+    input.disabled=false;
+    send.disabled=false;
+    input.focus();
+  }catch(error){
+    status.textContent="Prototype runtime offline — start chat_server.py";
+    input.disabled=true;
+    send.disabled=true;
+  }
+}
+
+document.getElementById("composer").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const text=input.value.trim();
+  if(!text||busy)return;
+  busy=true;
+  input.disabled=true;
+  send.disabled=true;
+  addMessage(text,"user");
   input.value="";
-  input.focus();
+  const thinking=addMessage("Thinking…","ai");
+  try{
+    const response=await fetch("/chat",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({message:text,conversation_id:conversationId})
+    });
+    const data=await response.json();
+    if(!response.ok) throw new Error(data.error||"chat request failed");
+    conversationId=data.conversation_id;
+    thinking.textContent=data.reply;
+    status.textContent="Prototype online · conversation "+conversationId.slice(0,8);
+  }catch(error){
+    thinking.textContent="I couldn't reach the Prototype runtime: "+error.message;
+    status.textContent="Prototype runtime error";
+  }finally{
+    busy=false;
+    input.disabled=false;
+    send.disabled=false;
+    input.focus();
+  }
 });
-</script>
-</body><script>
+
+checkRuntime();
+setInterval(checkRuntime,10000);
+
 (async()=>{
   const reloadIfNewer=async()=>{
     try{
@@ -62,8 +115,7 @@ document.getElementById("composer").addEventListener("submit",e=>{
       const current=Number(document.documentElement.dataset.generation ?? generation);
       if(!document.documentElement.dataset.generation){
         document.documentElement.dataset.generation=String(generation);
-        const header=document.querySelector("header");
-        if(header) header.textContent="Prototype — Self-Modelling AI · Generation "+generation;
+        document.getElementById("header").textContent="Prototype — Self-Modelling AI · Generation "+generation;
         return;
       }
       if(generation>current){
@@ -83,4 +135,5 @@ document.getElementById("composer").addEventListener("submit",e=>{
   setInterval(reloadIfNewer,5000);
 })();
 </script>
+</body>
 </html>
