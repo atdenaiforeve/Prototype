@@ -50,6 +50,30 @@ class LearningLoop:
         )
         return LearningRecord(prompt.strip(), result.output, score, None, memory_id)
 
+    def learn_from_user(self, message: str, *, conversation_id: str | None = None) -> int:
+        """Store what a person explicitly says so future conversations can use it.
+
+        This records the user's words as an experience; it does not guess hidden
+        traits or turn an inference into a fact. The normal memory system decides
+        later whether the experience is useful enough to retrieve.
+        """
+        message = message.strip()
+        if not message:
+            raise ValueError("message must not be empty")
+        if len(message) > 8_000:
+            raise ValueError("message is too long")
+
+        metadata: dict[str, Any] = {"conversation_id": conversation_id} if conversation_id else {}
+        return self.memory.remember(
+            f"User explicitly said: {message}",
+            memory_type="experience",
+            importance=0.7,
+            confidence=0.9,
+            source="user-conversation",
+            tags=["conversation", "user-shared", "learning"],
+            metadata=metadata,
+        )
+
     def give_feedback(self, record: LearningRecord, *, good: bool, feedback: str = "") -> LearningRecord:
         """Apply explicit feedback to the stored experience."""
         if record.memory_id is None:
@@ -74,3 +98,4 @@ class LearningLoop:
 
     def retrieve(self, prompt: str, limit: int = 5) -> list[dict[str, Any]]:
         return self.memory.recall(prompt, limit=limit)
+"
