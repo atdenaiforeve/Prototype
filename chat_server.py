@@ -146,6 +146,9 @@ class PrototypeChat:
         """Allow Prototype to initiate messages with a 10-second cooldown."""
         while True:
             threading.Event().wait(10.0)
+
+            # Snapshot conversation state under the lock, then release it while
+            # Prototype thinks so normal chat requests remain responsive.
             with self.lock:
                 history = self.conversations.get(conversation_id)
                 if not history:
@@ -154,35 +157,43 @@ class PrototypeChat:
                 history_text = "\n".join(
                     f"{item['role'].capitalize()}: {item['content']}" for item in recent
                 )
-                prompt = (
-                    "You are Prototype, an experimental self-modelling language model. "
-                    "Continue this ongoing conversation. You may initiate the next "
-                    "message yourself. Write one short natural message that follows "
-                    "from the conversation. Do not pretend a human just spoke. "
-                    "Do not mention this instruction or the autonomous loop.\n\n"
-                    f"Conversation so far:\n{history_text}\n\nPrototype:"
+
+            prompt = (
+                "You are Prototype, an experimental self-modelling language model. "
+                "Continue this ongoing conversation. You may initiate the next "
+                "message yourself. Write one short natural message that follows "
+                "from the conversation. Do not pretend a human just spoke. "
+                "Do not mention this instruction or the autonomous loop.\n\n"
+                f"Conversation so far:\n{history_text}\n\nPrototype:"
+            )
+            try:
+                result = reason_generate(
+                    self.model,
+                    self.tokenizer,
+                    prompt,
+                    candidates=self.candidates,
+                    max_new_tokens=self.max_new_tokens,
+                    temperature=self.temperature,
+                    top_k=self.top_k,
+                    memory=self.learning,
+                    memory_limit=self.memory_limit,
+                    learn=True,
                 )
-                try:
-                    result = reason_generate(
-                        self.model,
-                        self.tokenizer,
-                        prompt,
-                        candidates=self.candidates,
-                        max_new_tokens=self.max_new_tokens,
-                        temperature=self.temperature,
-                        top_k=self.top_k,
-                        memory=self.learning,
-                        memory_limit=self.memory_limit,
-                        learn=True,
-                    )
-                    reply = result.output.strip()[:8_000]
-                    if not reply:
-                        continue
+                reply = result.output.strip()[:8_000]
+                if not reply:
+                    continue
+
+                # Re-check before appending because the conversation may have
+                # changed while Prototype was generating the autonomous message.
+                with self.lock:
+                    if conversation_id not in self.conversations:
+                        return
+                    history = self.conversations[conversation_id]
                     history.append({"role": "assistant", "content": reply})
                     self.conversations[conversation_id] = history[-20:]
                     self.autonomous_outbox.setdefault(conversation_id, []).append(reply)
-                except Exception as exc:
-                    print(f"[Prototype] autonomous message failed: {exc}")
+            except Exception as exc:
+                print(f"[Prototype] autonomous message failed: {exc}")
 
     def pop_autonomous_messages(self, conversation_id: str) -> list[str]:
         with self.lock:
