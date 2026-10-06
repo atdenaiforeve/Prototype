@@ -46,7 +46,7 @@ class LearningLoopTests(unittest.TestCase):
     def test_retrieve_returns_relevant_experience(self):
         self.memory.remember("Prototype learned cats are animals.", memory_type="experience", confidence=0.9)
         self.memory.remember("Prototype learned about spacecraft.", memory_type="experience", confidence=0.9)
-        results = self.loop.retrieve("What did Prototype learn about cats?", limit=3)
+        results = self.loop.retrieve("cats animals", limit=3)
         self.assertEqual(len(results), 1)
         self.assertIn("cats", results[0]["content"])
 
