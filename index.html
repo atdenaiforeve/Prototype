@@ -10,7 +10,7 @@ html{height:100%;background:#050505}
 body{margin:0;min-height:100%;background:#000;color:#e8e8e8;font:16px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:flex;justify-content:center}
 .app{width:min(900px,100%);height:100dvh;min-height:100dvh;display:flex;flex-direction:column;background:#050505;overflow:hidden}
 header{padding:14px 16px;border-bottom:1px solid #222;font-weight:650;font-size:16px;line-height:1.25;flex:0 0 auto}
-.status{padding:7px 16px;color:#777;font-size:12px;line-height:1.3;border-bottom:1px solid #171717;flex:0 0 auto}
+.status{padding:7px 16px;color:#777;font-size:12px;line-height:1.3;border-bottom:1px solid #171717;flex:0 0 auto}\n.server-bar{display:flex;gap:8px;padding:8px 10px;border-bottom:1px solid #171717;background:#050505;flex:0 0 auto}\n.server-bar input{font-size:14px;padding:9px 11px}\n.server-bar button{min-height:40px;font-size:14px}
 .chat{flex:1;min-height:0;padding:14px 12px;display:flex;flex-direction:column;gap:9px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .message{max-width:min(82%,680px);padding:11px 13px;border:1px solid #242424;border-radius:14px;background:#0d0d0d;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.4}
 .message.user{align-self:flex-end;background:#151515}
@@ -25,7 +25,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 @media (max-width:600px){
   header{padding:12px 14px;font-size:15px}
   .status{padding:6px 14px;font-size:11px}
-  .chat{padding:10px 9px;gap:8px}
+  .server-bar{padding:7px 8px}\n  .server-bar button{min-width:72px}\n  .chat{padding:10px 9px;gap:8px}
   .message{max-width:90%;padding:10px 12px;border-radius:12px}
   .composer{gap:7px;padding:8px 8px max(8px,env(safe-area-inset-bottom))}
   input{padding:10px 12px;border-radius:11px}
@@ -36,7 +36,8 @@ button:disabled{opacity:.5;cursor:not-allowed}
 <body>
 <main class="app">
 <header id="header">Prototype — Self-Modelling AI</header>
-<div class="status" id="status">Connecting to Prototype…</div>
+<div class="status" id="status">Satellite disconnected</div>
+<div class="server-bar" id="serverBar"><input id="serverUrl" autocomplete="url" placeholder="Prototype server HTTPS URL" aria-label="Prototype server URL"><button id="connect" type="button">Connect</button></div>
 <section class="chat" id="chat" aria-live="polite">
 <div class="empty" id="empty">Chat area ready.<br><small>Prototype is connecting to its local runtime.</small></div>
 </section>
@@ -51,7 +52,11 @@ const empty=document.getElementById("empty");
 const input=document.getElementById("input");
 const send=document.getElementById("send");
 const status=document.getElementById("status");
+const serverUrl=document.getElementById("serverUrl");
+const connect=document.getElementById("connect");
 let conversationId=null;
+let runtimeBase=localStorage.getItem("prototype_server_url")||"";
+serverUrl.value=runtimeBase;
 let busy=false;
 
 function addMessage(text,kind){
@@ -65,15 +70,19 @@ function addMessage(text,kind){
 }
 
 async function checkRuntime(){
+  if(!runtimeBase){
+    status.textContent="Satellite disconnected — enter the Prototype server URL";
+    input.disabled=true; send.disabled=true; return;
+  }
   try{
-    const response=await fetch("/health",{cache:"no-store"});
+    const response=await fetch(runtimeBase+"/health",{cache:"no-store"});
     if(!response.ok) throw new Error("runtime unavailable");
-    status.textContent="Prototype online";
+    status.textContent="🟢 Prototype satellite online";
     input.disabled=false;
     send.disabled=false;
     input.focus();
   }catch(error){
-    status.textContent="Prototype runtime offline — start chat_server.py";
+    status.textContent="🔴 Satellite offline — check Codespaces server";
     input.disabled=true;
     send.disabled=true;
   }
@@ -90,7 +99,7 @@ document.getElementById("composer").addEventListener("submit",async e=>{
   input.value="";
   const thinking=addMessage("Thinking…","ai");
   try{
-    const response=await fetch("/chat",{
+    const response=await fetch(runtimeBase+"/chat",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({message:text,conversation_id:conversationId})
@@ -111,6 +120,17 @@ document.getElementById("composer").addEventListener("submit",async e=>{
   }
 });
 
+connect.addEventListener("click",()=>{
+  const value=serverUrl.value.trim().replace(/\\/$/,"");
+  if(!value){ status.textContent="Enter the Prototype server URL"; return; }
+  try{ new URL(value); }catch{ status.textContent="That server URL is not valid"; return; }
+  runtimeBase=value;
+  localStorage.setItem("prototype_server_url",runtimeBase);
+  conversationId=null;
+  status.textContent="📡 Connecting to Prototype satellite…";
+  checkRuntime();
+});
+serverUrl.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();connect.click();}});
 checkRuntime();
 setInterval(checkRuntime,10000);
 
