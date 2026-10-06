@@ -15,10 +15,11 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
-from inference import load_checkpoint, reason_generate
+from inference import generate, load_checkpoint, reason_generate
 from learning import LearningLoop
 from communication import AICommunication
 from experience import ExperienceEngine
+from experience_agent import ExperienceAgent
 from self_model import SelfModel
 
 
@@ -44,6 +45,10 @@ class PrototypeChat:
         self.model, self.tokenizer, _ = load_checkpoint(checkpoint, tokenizer)
         self.learning = LearningLoop()
         self.experience = ExperienceEngine(memory=self.learning.memory)
+        self.experience_agent = ExperienceAgent(
+            self.experience,
+            lambda prompt, **kwargs: generate(self.model, self.tokenizer, prompt, **kwargs),
+        )
         self.communication = AICommunication(memory=self.learning.memory)
         self.self_model = SelfModel()
         self.candidates = candidates
@@ -175,7 +180,7 @@ def make_handler(chat: PrototypeChat):
 
         def do_POST(self) -> None:
             parsed = urlparse(self.path)
-            if parsed.path not in {"/chat", "/experience/step", "/communicate", "/self-update/intention"}:
+            if parsed.path not in {"/chat", "/experience/step", "/experience/think-step", "/communicate", "/self-update/intention"}:
                 self._send_json(404, {"error": "not found"})
                 return
 
@@ -197,6 +202,10 @@ def make_handler(chat: PrototypeChat):
                 if parsed.path == "/experience/step":
                     experience = chat.experience.step(body.get("action", ""))
                     self._send_json(200, experience.as_dict())
+                    return
+
+                if parsed.path == "/experience/think-step":
+                    self._send_json(200, chat.experience_agent.step())
                     return
 
                 if parsed.path == "/communicate":
