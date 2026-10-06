@@ -125,6 +125,21 @@ class SelfModel:
             state=self.current_state,
         )
 
+    def record_self_update_intention(
+        self,
+        goal: str,
+        *,
+        reason: str = "",
+        freshness_seconds: int = 24 * 60 * 60,
+    ) -> int:
+        """Immediately write a self-update intention to Prototype memory."""
+        from memory import get_memory
+        return get_memory().remember_self_update_intention(
+            goal,
+            reason=reason,
+            freshness_seconds=freshness_seconds,
+        )
+
     def latest_self_update_intention(self) -> dict[str, Any] | None:
         """Expose the newest fresh self-update intention to the self-model."""
         try:
