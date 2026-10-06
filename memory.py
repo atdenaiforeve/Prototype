@@ -22,6 +22,7 @@ SCHEMA_VERSION = 2
 MEMORY_TYPES = {
     "fact", "conversation", "experience", "training", "task", "goal",
     "preference", "concept", "correction", "skill", "event", "note",
+    "self_update_intention",
 }
 
 STOPWORDS = {
@@ -205,6 +206,100 @@ class MemoryEngine:
                 (memory_id, content, now),
             )
             return memory_id
+
+    def remember_self_update_intention(
+        self,
+        content: str,
+        *,
+        reason: Optional[str] = None,
+        importance: float = 0.95,
+        confidence: float = 0.9,
+        freshness_seconds: int = 24 * 60 * 60,
+    ) -> int:
+        """Store the current self-update intention with a 24-hour freshness window."""
+        now = _now()
+        freshness_seconds = max(1, int(freshness_seconds))
+        metadata = {
+            "status": "planned",
+            "expires_at": now + freshness_seconds,
+            "reason": reason or "",
+        }
+        return self.remember(
+            content,
+            memory_type="self_update_intention",
+            importance=importance,
+            confidence=confidence,
+            source="self_model",
+            tags=["self-update", "intention"],
+            metadata=metadata,
+            deduplicate=False,
+        )
+
+    def latest_self_update_intention(
+        self,
+        *,
+        freshness_seconds: int = 24 * 60 * 60,
+        include_completed: bool = False,
+    ) -> Optional[dict[str, Any]]:
+        """Return the newest fresh self-update intention, or None if there isn't one."""
+        now = _now()
+        with self._connect() as con:
+            rows = con.execute(
+                """
+                SELECT * FROM memories
+                WHERE memory_type = ? AND archived = 0
+                ORDER BY created_at DESC, id DESC
+                """,
+                ("self_update_intention",),
+            ).fetchall()
+
+            for row in rows:
+                try:
+                    metadata = json.loads(row["metadata"] or "{}")
+                except (TypeError, json.JSONDecodeError):
+                    metadata = {}
+                status = str(metadata.get("status", "planned"))
+                if not include_completed and status in {"completed", "rejected", "expired"}:
+                    continue
+                expires_at = float(metadata.get("expires_at", row["created_at"] + freshness_seconds))
+                if expires_at <= now:
+                    if status not in {"completed", "rejected", "expired"}:
+                        metadata["status"] = "expired"
+                        con.execute(
+                            "UPDATE memories SET metadata = ?, updated_at = ? WHERE id = ?",
+                            (json.dumps(metadata), now, row["id"]),
+                        )
+                    continue
+
+                con.execute(
+                    "UPDATE memories SET access_count = access_count + 1, last_used_at = ? WHERE id = ?",
+                    (now, row["id"]),
+                )
+                return self._row_to_dict(row)
+        return None
+
+    def set_self_update_intention_status(self, memory_id: int, status: str) -> bool:
+        """Set the lifecycle status of a self-update intention."""
+        allowed = {"planned", "testing", "completed", "rejected", "expired"}
+        if status not in allowed:
+            raise ValueError(f"Invalid self-update intention status: {status}")
+        with self._connect() as con:
+            row = con.execute(
+                "SELECT metadata FROM memories WHERE id = ? AND memory_type = 'self_update_intention'",
+                (int(memory_id),),
+            ).fetchone()
+            if not row:
+                return False
+            try:
+                metadata = json.loads(row["metadata"] or "{}")
+            except (TypeError, json.JSONDecodeError):
+                metadata = {}
+            metadata["status"] = status
+            con.execute(
+                "UPDATE memories SET metadata = ?, updated_at = ? WHERE id = ?",
+                (json.dumps(metadata), _now(), int(memory_id)),
+            )
+            return True
 
     def recall(
         self,
@@ -551,6 +646,18 @@ def remember(content: str, memory_type: str = "general", importance: float = 0.5
         source=source,
         **kwargs,
     )
+
+
+def remember_self_update_intention(content: str, **kwargs: Any) -> int:
+    return get_memory().remember_self_update_intention(content, **kwargs)
+
+
+def latest_self_update_intention(**kwargs: Any) -> Optional[dict[str, Any]]:
+    return get_memory().latest_self_update_intention(**kwargs)
+
+
+def set_self_update_intention_status(memory_id: int, status: str) -> bool:
+    return get_memory().set_self_update_intention_status(memory_id, status)
 
 
 def recall(query: str, limit: int = 5, **kwargs: Any) -> list[dict[str, Any]]:
