@@ -48,3 +48,35 @@ Run the complete Python regression suite with:
 python -m compileall -q .
 python -m unittest discover -s . -p "test_*.py" -v
 ```
+
+
+## Experience loop
+
+Prototype now has a controlled GridWorld environment and a model-driven experience controller.
+
+With a trained checkpoint running, the local server exposes:
+
+- `GET /experience/status` — current position, goal, and available actions.
+- `POST /experience/think-step` — Prototype observes the environment, asks its own language model to choose an action, performs it, and stores the experience in memory.
+- `POST /experience/step` — manually perform a specific action for testing.
+- `GET /self-update/status` — inspect the newest fresh self-update intention.
+
+If Prototype produces an invalid action, the experience controller records a fresh self-update intention and uses a safe fallback action instead of crashing.
+
+## AI communication
+
+Prototype now has an explicit peer communication layer. Peers are **not discovered automatically**.
+
+Configure peers with the `PROTOTYPE_PEERS` environment variable:
+
+```json
+{"example-ai":"http://127.0.0.1:9000/message"}
+```
+
+Then:
+
+- `GET /peers` lists configured peers.
+- `POST /communicate` sends a message to one explicitly configured peer.
+- Peer replies are stored as external information in memory and are not treated as verified truth automatically.
+
+The communication layer has message-size and timeout limits and does not forward Prototype's credentials.
