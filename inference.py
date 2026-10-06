@@ -12,6 +12,7 @@ from model import PrototypeLanguageModel
 from monitor import ReasoningMonitor, entropy
 from reasoning import ReasoningWorkspace
 from reasoning_engine import ReasoningResult, reason
+from self_model import SelfModel
 from tokenizer import Tokenizer
 
 
@@ -169,6 +170,14 @@ def reason_generate(
             for memory_item in memories
         ],
     }
+    self_model = SelfModel()
+    self_observation = self_model.observe(
+        model=model,
+        memory=learning.memory,
+        state={"mode": "reasoning", "prompt_length": len(prompt)},
+    )
+    result.workspace["self_model"] = self_model.snapshot(self_observation)
+
     if learn:
         learning.record_result(prompt, result)
     return result
