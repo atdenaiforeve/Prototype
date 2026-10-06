@@ -23,6 +23,7 @@ SPECIAL_TOKENS = {
 }
 
 DEFAULT_WORD_LIST = Path(__file__).with_name("english_words.txt")
+WORD_BOUNDARY = "▁"
 
 
 class Tokenizer:
@@ -139,7 +140,7 @@ class Tokenizer:
         return self.tokenize(text)
 
     def _apply_merges(self, word: str) -> list[str]:
-        pieces = list(word)
+        pieces = list(WORD_BOUNDARY + word)
         merge_map = {pair: pair[0] + pair[1] for pair in self.merges}
         for pair in self.merges:
             merged = merge_map[pair]
@@ -190,15 +191,21 @@ class Tokenizer:
 
         text = ""
         for token in tokens:
-            if not text:
-                text = token
-            elif token.isalnum() or "_" in token:
+            boundary = token.startswith(WORD_BOUNDARY)
+            piece = token[len(WORD_BOUNDARY):] if boundary else token
+            if boundary:
+                if text:
+                    text += " "
+                text += piece
+            elif not text:
+                text = piece
+            elif piece.isalnum() or "_" in piece:
                 # Character/subword pieces are joined without spaces.
-                text += token
-            elif token in ".,!?;:)]}%":
-                text += token
+                text += piece
+            elif piece in ".,!?;:)]}%":
+                text += piece
             else:
-                text += " " + token
+                text += " " + piece
         return text
 
     @property
