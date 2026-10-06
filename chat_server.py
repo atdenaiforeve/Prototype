@@ -216,8 +216,10 @@ def make_handler(chat: PrototypeChat):
                 self._send_json(200, {"peers": chat.communication.list_peers()})
                 return
             if parsed.path == "/self-update/status":
+                from self_update import GitHubSelfUpdater
                 self._send_json(200, {
                     "latest_intention": chat.self_model.latest_self_update_intention(),
+                    "frozen": GitHubSelfUpdater.is_frozen(),
                 })
                 return
             self._send_json(404, {"error": "not found"})
@@ -231,6 +233,7 @@ def make_handler(chat: PrototypeChat):
                 "/communicate",
                 "/ai/message",
                 "/self-update/intention",
+                "/self-update/freeze",
             }
             if parsed.path not in allowed:
                 self._send_json(404, {"error": "not found"})
@@ -293,6 +296,11 @@ def make_handler(chat: PrototypeChat):
                         "memory_id": memory_id,
                         "intention": chat.self_model.latest_self_update_intention(),
                     })
+                    return
+                if parsed.path == "/self-update/freeze":
+                    from self_update import GitHubSelfUpdater
+                    GitHubSelfUpdater.freeze()
+                    self._send_json(200, {"frozen": True})
                     return
             except ValueError as exc:
                 self._send_json(400, {"error": str(exc)})
