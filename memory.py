@@ -261,6 +261,8 @@ class MemoryEngine:
                     metadata = json.loads(row["metadata"] or "{}")
                 except (TypeError, json.JSONDecodeError):
                     metadata = {}
+                if not isinstance(metadata, dict):
+                    metadata = {}
                 status = str(metadata.get("status", "planned"))
                 if not include_completed and status in {"completed", "rejected", "expired"}:
                     continue
@@ -324,6 +326,8 @@ class MemoryEngine:
         if not query:
             return []
         query_terms = _tokens(query)
+        if not query_terms:
+            return []
         limit = max(1, int(limit))
 
         with self._connect() as con:
