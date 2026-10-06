@@ -34,34 +34,41 @@ def make_windows(
     context_size: int,
     stride: int = 1,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Create sequence inputs and next-token targets."""
+    """Create sequence inputs and next-token targets efficiently."""
+    if context_size < 1:
+        raise ValueError("context_size must be positive")
+    if stride < 1:
+        raise ValueError("stride must be positive")
     if len(token_ids) <= context_size:
         raise ValueError("training text is too short for the chosen context size")
 
-    inputs = []
-    targets = []
-    for start in range(0, len(token_ids) - context_size, stride):
-        inputs.append(token_ids[start:start + context_size])
-        targets.append(token_ids[start + 1:start + context_size + 1])
-
-    return (
-        torch.tensor(inputs, dtype=torch.long),
-        torch.tensor(targets, dtype=torch.long),
-    )
+    tokens = torch.tensor(token_ids, dtype=torch.long)
+    inputs = tokens.unfold(0, context_size, stride)
+    targets = tokens[1:].unfold(0, context_size, stride)
+    return inputs.contiguous(), targets.contiguous()
 
 
-def split_data(
-    inputs: torch.Tensor,
-    targets: torch.Tensor,
+def split_token_ids(
+    token_ids: list[int],
+    context_size: int,
     validation_fraction: float = 0.1,
-) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-    """Split chronologically so validation text stays unseen during training."""
+) -> tuple[list[int], list[int]]:
+    """Split raw tokens before windowing so validation text is truly unseen."""
+    if context_size < 1:
+        raise ValueError("context_size must be positive")
     if not 0 < validation_fraction < 1:
         raise ValueError("validation_fraction must be between 0 and 1")
 
-    split = max(1, int(len(inputs) * (1.0 - validation_fraction)))
-    split = min(split, len(inputs) - 1)
-    return inputs[:split], targets[:split], inputs[split:], targets[split:]
+    minimum_segment = context_size + 1
+    if len(token_ids) < minimum_segment * 2:
+        raise ValueError(
+            "training text is too short to create independent training and validation sets"
+        )
+
+    split = int(len(token_ids) * (1.0 - validation_fraction))
+    split = max(minimum_segment, split)
+    split = min(split, len(token_ids) - minimum_segment)
+    return token_ids[:split], token_ids[split:]
 
 
 def run_epoch(
@@ -77,6 +84,13 @@ def run_epoch(
     order = list(range(len(inputs)))
     if training:
         random.shuffle(order)
+
+    if inputs.shape != targets.shape:
+        raise ValueError("inputs and targets must have the same shape")
+    if inputs.numel() == 0:
+        raise ValueError("training epoch received no samples")
+    if batch_size < 1:
+        raise ValueError("batch_size must be positive")
 
     total_loss = 0.0
     total_tokens = 0
@@ -125,6 +139,10 @@ def main() -> None:
         raise ValueError("context-size should be at least 8")
     if args.batch_size < 1:
         raise ValueError("batch-size must be positive")
+    if args.epochs < 1:
+        raise ValueError("epochs must be positive")
+    if args.learning_rate <= 0:
+        raise ValueError("learning-rate must be positive")
 
     text, files = load_training_folder(args.data_dir)
     print(f"loaded {len(files)} training file(s):")
@@ -136,8 +154,13 @@ def main() -> None:
     tokenizer.save()
 
     token_ids = tokenizer.encode(text, add_boundaries=True)
-    inputs, targets = make_windows(token_ids, args.context_size)
-    train_x, train_y, val_x, val_y = split_data(inputs, targets, args.validation_fraction)
+    train_tokens, val_tokens = split_token_ids(
+        token_ids,
+        args.context_size,
+        args.validation_fraction,
+    )
+    train_x, train_y = make_windows(train_tokens, args.context_size)
+    val_x, val_y = make_windows(val_tokens, args.context_size)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"vocabulary: {tokenizer.vocabulary_size}")
@@ -174,6 +197,7 @@ def main() -> None:
 
         if val_loss < best_val:
             best_val = val_loss
+            args.checkpoint.parent.mkdir(parents=True, exist_ok=True)
             torch.save(
                 {
                     "format_version": 2,
