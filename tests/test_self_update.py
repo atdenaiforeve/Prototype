@@ -56,6 +56,12 @@ class SelfUpdateTests(unittest.TestCase):
             ["self_update.py", ".github/workflows/full-tests.yml"],
         )
 
+    def test_paths_reject_null_bytes(self):
+        with self.assertRaises(ValueError):
+            GitHubSelfUpdater.validate_read_paths(["safe.py\0bad"])
+        with self.assertRaises(ValueError):
+            GitHubSelfUpdater.validate_paths(["safe.py\0bad"])
+
     def test_read_paths_still_reject_secrets_and_git_metadata(self):
         for path in (".env", "memory.db", ".git/config", "../outside.py"):
             with self.subTest(path=path):
