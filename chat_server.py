@@ -49,11 +49,18 @@ class PrototypeChat:
         self.lock = threading.Lock()
 
     def chat(self, message: str, conversation_id: str | None = None) -> dict:
+        if not isinstance(message, str):
+            raise ValueError("message must be a string")
         message = message.strip()
         if not message:
             raise ValueError("message must not be empty")
 
-        conversation_id = conversation_id or str(uuid.uuid4())
+        if conversation_id is None:
+            conversation_id = str(uuid.uuid4())
+        elif not isinstance(conversation_id, str) or not conversation_id.strip():
+            raise ValueError("conversation_id must be a non-empty string")
+        else:
+            conversation_id = conversation_id.strip()
 
         with self.lock:
             history = self.conversations.setdefault(conversation_id, [])
@@ -160,6 +167,8 @@ def make_handler(chat: PrototypeChat):
                 if length <= 0 or length > 32_000:
                     raise ValueError("invalid request size")
                 body = json.loads(self.rfile.read(length).decode("utf-8"))
+                if not isinstance(body, dict):
+                    raise ValueError("request body must be a JSON object")
                 result = chat.chat(
                     body.get("message", ""),
                     body.get("conversation_id"),
