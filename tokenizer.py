@@ -98,7 +98,11 @@ class Tokenizer:
         return tuple(output)
 
     def learn(self, text: str) -> list[str]:
-        """Learn a subword vocabulary from text and return encoded pieces."""
+        """Rebuild the subword vocabulary from the supplied training text."""
+        if not isinstance(text, str):
+            raise TypeError("text must be a string")
+        if not text.strip():
+            raise ValueError("training text must not be empty")
         self._reset_special_tokens()
         self.frequencies.clear()
         self.merges.clear()
@@ -235,7 +239,12 @@ class Tokenizer:
                 str(token): int(token_id)
                 for token, token_id in data.get("token_to_id", {}).items()
             }
-            if not all(token in token_to_id for token in SPECIAL_TOKENS):
+            if any(token_to_id.get(token) != token_id for token, token_id in SPECIAL_TOKENS.items()):
+                return
+            ids = list(token_to_id.values())
+            if len(ids) != len(set(ids)) or sorted(ids) != list(range(len(ids))):
+                return
+            if len(token_to_id) > int(data.get("vocab_limit", self.vocab_limit)):
                 return
             self.token_to_id = token_to_id
             self.id_to_token = {value: key for key, value in token_to_id.items()}
@@ -246,7 +255,9 @@ class Tokenizer:
                 if isinstance(pair, list) and len(pair) == 2
             ]
             self.vocab_limit = int(data.get("vocab_limit", self.vocab_limit))
-            self.min_frequency = int(data.get("min_frequency", self.min_frequency))
+            self.min_frequency = max(1, int(data.get("min_frequency", self.min_frequency)))
+            if self.vocab_limit < len(SPECIAL_TOKENS):
+                raise ValueError("saved vocab_limit is too small")
         except (OSError, ValueError, TypeError, json.JSONDecodeError):
             self._reset_special_tokens()
 
