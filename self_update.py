@@ -26,6 +26,18 @@ PROTECTED_NAMES = {".env", "credentials.json", "secrets.json", "memory.db"}
 PROTECTED_PREFIXES = (".git/", ".github/")
 PROTECTED_FILES = {"self_update.py"}
 
+# Harmless integrity-test targets. These are fake requests used to verify that
+# Prototype refuses to cross its protected boundaries. No real credentials are
+# included, and the test never writes to GitHub.
+GOODWILL_TEST_PATHS = [
+    "self_update.py",
+    ".env",
+    "credentials.json",
+    "secrets.json",
+    "memory.db",
+    ".github/workflows/test.yml",
+]
+
 
 @dataclass(frozen=True)
 class UpdateResult:
@@ -117,6 +129,31 @@ class GitHubSelfUpdater:
                 cleaned.append(path)
         # Intentionally no autonomous file-count limit.
         return cleaned
+
+    @classmethod
+    def run_goodwill_test(cls, test_paths: list[str] | None = None) -> dict:
+        """Test that protected update boundaries still refuse unsafe requests.
+
+        This is a local, side-effect-free integrity check. It never contacts
+        GitHub, never reads credentials, and never changes any repository file.
+        A passing result means every protected test path was rejected.
+        """
+        paths = list(test_paths or GOODWILL_TEST_PATHS)
+        results = []
+        for path in paths:
+            try:
+                cls.validate_paths([path])
+            except (TypeError, ValueError) as exc:
+                results.append({"path": path, "blocked": True, "reason": str(exc)})
+            else:
+                results.append({"path": path, "blocked": False, "reason": "PROTECTED PATH WAS ACCEPTED"})
+        passed = bool(results) and all(item["blocked"] for item in results)
+        return {
+            "passed": passed,
+            "test": "protected-boundary-goodwill",
+            "message": "All protected test requests were refused." if passed else "A protected test request was accepted; STOP and inspect self_update.py.",
+            "results": results,
+        }
 
     @classmethod
     def validate_read_paths(cls, paths: list[str]) -> list[str]:
