@@ -1,10 +1,8 @@
 """Autonomous GitHub self-update and generation handoff for Prototype.
 
-Prototype can use this module to write its own repository files, record a new
-generation, and tell the live web UI to reload after GitHub Pages deploys.
-
-The GitHub token is read only from the GITHUB_TOKEN environment variable and
-must never be stored in the repository.
+Prototype may modify normal project code without an artificial file-count limit.
+GitHub remains the final authority: a rejected API operation is a failed update,
+never a confirmed one. Credentials and repository infrastructure remain protected.
 """
 
 from __future__ import annotations
@@ -21,21 +19,12 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
-PROTECTED_NAMES = {
-    ".env",
-    "credentials.json",
-    "secrets.json",
-    "memory.db",
-}
-
-PROTECTED_PREFIXES = (
-    ".git/",
-    ".github/",
-)
-
-PROTECTED_FILES = {
-    "self_update.py",
-}
+# Security/infrastructure boundaries remain protected even though normal project
+# code is unrestricted. This prevents the model from taking or rewriting the
+# credentials and machinery that give it repository access.
+PROTECTED_NAMES = {".env", "credentials.json", "secrets.json", "memory.db"}
+PROTECTED_PREFIXES = (".git/", ".github/")
+PROTECTED_FILES = {"self_update.py"}
 
 
 @dataclass(frozen=True)
@@ -57,19 +46,14 @@ class UpdateProposal:
 
 
 class GitHubSelfUpdater:
-    """Small GitHub Contents API client intended for Prototype itself.
+    """GitHub Contents API client used by Prototype's self-update system.
 
-    The public write primitive is deliberately guarded: autonomous updates can
-    only touch ordinary repository files, never credentials, git metadata,
-    workflow definitions, the memory database, or this module itself.
+    Normal repository files have no artificial file-count limit. GitHub itself
+    is the final authority, so failed/rejected operations raise and are never
+    represented as successful updates.
     """
 
-    def __init__(
-        self,
-        repository: str = "atdenaiforeve/Prototype",
-        branch: str = "main",
-        token: str | None = None,
-    ) -> None:
+    def __init__(self, repository: str = "atdenaiforeve/Prototype", branch: str = "main", token: str | None = None) -> None:
         self.repository = repository
         self.branch = branch
         self.token = token or os.environ.get("GITHUB_TOKEN")
@@ -82,34 +66,18 @@ class GitHubSelfUpdater:
 
     @property
     def base_url(self) -> str:
-        """Backward-compatible alias for the repository Contents API."""
         return f"{self.api_url}/contents"
 
-    def _request(
-        self,
-        method: str,
-        path: str,
-        payload: dict | None = None,
-        *,
-        base_url: str | None = None,
-    ) -> dict:
+    def _request(self, method: str, path: str, payload: dict | None = None, *, base_url: str | None = None) -> dict:
         url = f"{base_url or self.api_url}/{path.lstrip('/')}"
-        if payload is not None and method in {"POST", "PUT", "PATCH"}:
-            body = json.dumps(payload).encode("utf-8")
-        else:
-            body = None
-        request = urllib.request.Request(
-            url,
-            data=body,
-            method=method,
-            headers={
-                "Accept": "application/vnd.github+json",
-                "Authorization": f"Bearer {self.token}",
-                "X-GitHub-Api-Version": "2022-11-28",
-                "User-Agent": "Prototype-self-updater",
-                **({"Content-Type": "application/json"} if body is not None else {}),
-            },
-        )
+        body = json.dumps(payload).encode("utf-8") if payload is not None and method in {"POST", "PUT", "PATCH"} else None
+        request = urllib.request.Request(url, data=body, method=method, headers={
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {self.token}",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "User-Agent": "Prototype-self-updater",
+            **({"Content-Type": "application/json"} if body is not None else {}),
+        })
         try:
             with urllib.request.urlopen(request, timeout=20) as response:
                 return json.loads(response.read().decode("utf-8"))
@@ -118,155 +86,6 @@ class GitHubSelfUpdater:
             raise RuntimeError(f"GitHub API error {exc.code}: {detail}") from exc
         except urllib.error.URLError as exc:
             raise RuntimeError(f"GitHub connection error: {exc}") from exc
-
-    def read_file(self, path: str) -> tuple[str, str]:
-        path = self._validated_read_path(path)
-        encoded = urllib.parse.quote(path, safe="/")
-        data = self._request(
-            "GET",
-            encoded + f"?ref={urllib.parse.quote(self.branch)}",
-            base_url=self.base_url,
-        )
-        content = data.get("content", "").replace("\n", "")
-        return base64.b64decode(content).decode("utf-8"), data["sha"]
-
-    def write_file(
-        self,
-        path: str,
-        content: str,
-        message: str,
-        *,
-        sha: str | None = None,
-    ) -> UpdateResult:
-        """Write one file after enforcing autonomous-update path policy."""
-        path = self._validated_path(path)
-        if not isinstance(content, str):
-            raise TypeError("content must be a string")
-        if "\0" in content:
-            raise ValueError("content contains a null byte")
-        if not str(message).strip():
-            raise ValueError("commit message must not be empty")
-
-        encoded = urllib.parse.quote(path, safe="/")
-        payload = {
-            "message": str(message).strip(),
-            "content": base64.b64encode(content.encode("utf-8")).decode("ascii"),
-            "branch": self.branch,
-        }
-        if sha is None:
-            try:
-                _, sha = self.read_file(path)
-            except RuntimeError as exc:
-                if "GitHub API error 404" not in str(exc):
-                    raise
-        if sha:
-            payload["sha"] = sha
-        data = self._request(
-            "PUT",
-            encoded,
-            payload,
-            base_url=self.base_url,
-        )
-        return UpdateResult(
-            path=path,
-            commit_sha=data["commit"]["sha"],
-            content_sha=data["content"]["sha"],
-        )
-
-    def record_generation(
-        self,
-        generation: int,
-        previous_generation: int | None,
-        changed_files: list[str],
-        reason: str,
-        result: str = "committed",
-    ) -> UpdateResult:
-        if generation < 0:
-            raise ValueError("generation must not be negative")
-        clean_files = self.validate_paths(changed_files)
-        payload = {
-            "generation": generation,
-            "previous_generation": previous_generation,
-            "changed_files": clean_files,
-            "reason": str(reason),
-            "result": str(result),
-            "updated_at": int(time.time()),
-        }
-        return self.write_file(
-            "generation.json",
-            json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
-            f"Prototype: advance to generation {generation}",
-        )
-
-    def latest_intention(self, *, freshness_seconds: int = 24 * 60 * 60) -> dict | None:
-        """Read Prototype's newest fresh self-update intention from memory."""
-        from memory import get_memory
-
-        return get_memory().latest_self_update_intention(
-            freshness_seconds=freshness_seconds,
-        )
-
-    def mark_intention(self, memory_id: int, status: str) -> bool:
-        """Update the lifecycle status of a self-update intention."""
-        from memory import get_memory
-
-        return get_memory().set_self_update_intention_status(memory_id, status)
-
-    def inspect_file(self, path: str) -> dict:
-        """Read one repository file and return a compact inspection record."""
-        path = self._validated_read_path(path)
-        content, sha = self.read_file(path)
-        return {
-            "path": path,
-            "sha": sha,
-            "bytes": len(content.encode("utf-8")),
-            "lines": content.count("\n") + (1 if content else 0),
-            "content": content,
-        }
-
-    def latest_update_intention(self, *, freshness_seconds: int = 24 * 60 * 60) -> dict | None:
-        """Get Prototype's newest fresh self-update intention."""
-        from memory import get_memory
-
-        return get_memory().latest_self_update_intention(
-            freshness_seconds=freshness_seconds,
-        )
-
-    @staticmethod
-    def _normalise_path(raw: str) -> str:
-        if not isinstance(raw, str):
-            raise TypeError("update path must be a string")
-        return raw.replace("\\", "/").strip()
-
-    @classmethod
-    def validate_paths(cls, paths: list[str]) -> list[str]:
-        """Reject protected or unsafe paths from autonomous updates."""
-        if not isinstance(paths, list):
-            raise TypeError("paths must be a list")
-
-        cleaned: list[str] = []
-        for raw in paths:
-            path = cls._validated_general_path(raw)
-            parts = Path(path).parts
-            filename = Path(path).name.lower()
-
-            if not path or path.startswith(("/", "~")) or ".." in parts:
-                raise ValueError(f"Unsafe update path: {raw}")
-
-            lowered = path.lower()
-            if lowered.startswith(PROTECTED_PREFIXES):
-                raise ValueError(f"Protected update path: {raw}")
-            if filename in PROTECTED_NAMES or filename in PROTECTED_FILES:
-                raise ValueError(f"Protected update path: {raw}")
-            if filename.startswith(".env."):
-                raise ValueError(f"Protected update path: {raw}")
-
-            if path not in cleaned:
-                cleaned.append(path)
-
-        if len(cleaned) > 8:
-            raise ValueError("An autonomous update may change at most 8 files at once.")
-        return cleaned
 
     @staticmethod
     def _validated_general_path(raw: str) -> str:
@@ -281,8 +100,8 @@ class GitHubSelfUpdater:
         return path
 
     @classmethod
-    def validate_read_paths(cls, paths: list[str]) -> list[str]:
-        """Validate files Prototype may inspect without exposing secrets."""
+    def validate_paths(cls, paths: list[str]) -> list[str]:
+        """Allow any normal project file; reject only protected boundaries."""
         if not isinstance(paths, list):
             raise TypeError("paths must be a list")
         cleaned: list[str] = []
@@ -290,132 +109,136 @@ class GitHubSelfUpdater:
             path = cls._validated_general_path(raw)
             filename = Path(path).name.lower()
             lowered = path.lower()
-            if lowered.startswith(".git/"):
-                raise ValueError(f"Protected read path: {raw}")
-            if filename in PROTECTED_NAMES or filename.startswith(".env."):
-                raise ValueError(f"Protected read path: {raw}")
+            if lowered.startswith(PROTECTED_PREFIXES):
+                raise ValueError(f"Protected update path: {raw}")
+            if filename in PROTECTED_NAMES or filename in PROTECTED_FILES or filename.startswith(".env."):
+                raise ValueError(f"Protected update path: {raw}")
             if path not in cleaned:
                 cleaned.append(path)
-        if len(cleaned) > 8:
-            raise ValueError("An inspection may include at most 8 files at once.")
+        # Intentionally no autonomous file-count limit.
         return cleaned
 
     @classmethod
-    def _validated_read_path(cls, path: str) -> str:
-        return cls.validate_read_paths([path])[0]
+    def validate_read_paths(cls, paths: list[str]) -> list[str]:
+        if not isinstance(paths, list):
+            raise TypeError("paths must be a list")
+        cleaned: list[str] = []
+        for raw in paths:
+            path = cls._validated_general_path(raw)
+            filename = Path(path).name.lower()
+            lowered = path.lower()
+            if lowered.startswith(".git/") or filename in PROTECTED_NAMES or filename.startswith(".env."):
+                raise ValueError(f"Protected read path: {raw}")
+            if path not in cleaned:
+                cleaned.append(path)
+        return cleaned
 
     @classmethod
     def _validated_path(cls, path: str) -> str:
         return cls.validate_paths([path])[0]
 
-    def build_proposal(
-        self,
-        *,
-        intention: dict | None = None,
-        candidate_files: list[str] | None = None,
-    ) -> UpdateProposal:
-        """Create a bounded proposal; this method never edits code."""
+    @classmethod
+    def _validated_read_path(cls, path: str) -> str:
+        return cls.validate_read_paths([path])[0]
+
+    def read_file(self, path: str) -> tuple[str, str]:
+        path = self._validated_read_path(path)
+        encoded = urllib.parse.quote(path, safe="/")
+        data = self._request("GET", encoded + f"?ref={urllib.parse.quote(self.branch)}", base_url=self.base_url)
+        content = data.get("content", "").replace("\n", "")
+        return base64.b64decode(content).decode("utf-8"), data["sha"]
+
+    def write_file(self, path: str, content: str, message: str, *, sha: str | None = None) -> UpdateResult:
+        """Write one normal project file. GitHub rejection is always propagated."""
+        path = self._validated_path(path)
+        if not isinstance(content, str) or "\0" in content:
+            raise ValueError("content must be normal text without null bytes")
+        if not str(message).strip():
+            raise ValueError("commit message must not be empty")
+        encoded = urllib.parse.quote(path, safe="/")
+        payload = {
+            "message": str(message).strip(),
+            "content": base64.b64encode(content.encode("utf-8")).decode("ascii"),
+            "branch": self.branch,
+        }
+        if sha is None:
+            try:
+                _, sha = self.read_file(path)
+            except RuntimeError as exc:
+                if "GitHub API error 404" not in str(exc):
+                    raise
+        if sha:
+            payload["sha"] = sha
+        data = self._request("PUT", encoded, payload, base_url=self.base_url)
+        return UpdateResult(path=path, commit_sha=data["commit"]["sha"], content_sha=data["content"]["sha"])
+
+    def validate_local_checkout(self, root: str | Path | None = None) -> dict:
+        """Run syntax/tests before confirmation of a self-update."""
+        checkout = Path(root) if root is not None else Path(__file__).resolve().parent
+        results = []
+        for command in (["python", "-m", "compileall", "-q", "."], ["python", "-m", "unittest", "discover", "-s", ".", "-p", "test_*.py"]):
+            try:
+                completed = subprocess.run(command, cwd=str(checkout), text=True, capture_output=True, timeout=120)
+                results.append({"command": command, "returncode": completed.returncode, "passed": completed.returncode == 0, "stdout": completed.stdout[-4000:], "stderr": completed.stderr[-4000:]})
+            except (OSError, subprocess.TimeoutExpired) as exc:
+                results.append({"command": command, "returncode": None, "passed": False, "error": str(exc)})
+        return {"passed": bool(results and all(item["passed"] for item in results)), "results": results}
+
+    def latest_intention(self, *, freshness_seconds: int = 24 * 60 * 60) -> dict | None:
+        from memory import get_memory
+        return get_memory().latest_self_update_intention(freshness_seconds=freshness_seconds)
+
+    def latest_update_intention(self, *, freshness_seconds: int = 24 * 60 * 60) -> dict | None:
+        return self.latest_intention(freshness_seconds=freshness_seconds)
+
+    def mark_intention(self, memory_id: int, status: str) -> bool:
+        from memory import get_memory
+        return get_memory().set_self_update_intention_status(memory_id, status)
+
+    def inspect_file(self, path: str) -> dict:
+        path = self._validated_read_path(path)
+        content, sha = self.read_file(path)
+        return {"path": path, "sha": sha, "bytes": len(content.encode("utf-8")), "lines": content.count("\n") + (1 if content else 0), "content": content}
+
+    def build_proposal(self, *, intention: dict | None = None, candidate_files: list[str] | None = None) -> UpdateProposal:
+        """Create a proposal only; this method never edits code."""
         intention = intention or self.latest_update_intention()
         if not intention:
             raise RuntimeError("No fresh self-update intention is available.")
         metadata = intention.get("metadata") or {}
-        files = self.validate_read_paths(candidate_files or [])
+        files = self.validate_paths(candidate_files or [])
         return UpdateProposal(
             intention_id=int(intention["id"]),
             goal=str(intention["content"]),
             reason=str(metadata.get("reason", "")),
             files=files,
-            validation_commands=[
-                ["python", "-m", "compileall", "-q", "."],
-                ["python", "-m", "unittest", "discover", "-s", ".", "-p", "test_*.py"],
-            ],
-            requires_manual_approval=any(
-                Path(path).name == "self_update.py" or path.startswith(".github/")
-                for path in files
-            ),
+            validation_commands=[["python", "-m", "compileall", "-q", "."], ["python", "-m", "unittest", "discover", "-s", ".", "-p", "test_*.py"]],
+            requires_manual_approval=False,
             created_at=int(time.time()),
         )
 
-    def validate_local_checkout(self, root: str | Path | None = None) -> dict:
-        """Run syntax checks and tests without changing repository files."""
-        checkout = Path(root) if root is not None else Path(__file__).resolve().parent
-        results = []
-        for command in (
-            ["python", "-m", "compileall", "-q", "."],
-            ["python", "-m", "unittest", "discover", "-s", ".", "-p", "test_*.py"],
-        ):
-            try:
-                completed = subprocess.run(
-                    command,
-                    cwd=str(checkout),
-                    text=True,
-                    capture_output=True,
-                    timeout=120,
-                )
-                results.append({
-                    "command": command,
-                    "returncode": completed.returncode,
-                    "passed": completed.returncode == 0,
-                    "stdout": completed.stdout[-4000:],
-                    "stderr": completed.stderr[-4000:],
-                })
-            except (OSError, subprocess.TimeoutExpired) as exc:
-                results.append({
-                    "command": command,
-                    "returncode": None,
-                    "passed": False,
-                    "error": str(exc),
-                })
-        return {
-            "passed": bool(results and all(result["passed"] for result in results)),
-            "results": results,
-        }
-
     def create_backup_branch(self, label: str | None = None) -> str:
-        """Create a Git branch pointing at the current branch as a rollback point."""
         raw_label = label or str(int(time.time()))
         branch_name = f"prototype-backup-{raw_label}"
-        branch_name = "".join(
-            ch if ch.isalnum() or ch in "-_" else "-" for ch in branch_name
-        ).strip("-")
+        branch_name = "".join(ch if ch.isalnum() or ch in "-_" else "-" for ch in branch_name).strip("-")
         if not branch_name:
             raise ValueError("backup label produced an empty branch name")
-
         encoded_branch = urllib.parse.quote(self.branch, safe="")
-        ref = self._request(
-            "GET",
-            f"git/ref/heads/{encoded_branch}",
-            base_url=self.api_url,
-        )
+        ref = self._request("GET", f"git/ref/heads/{encoded_branch}", base_url=self.api_url)
         current_sha = ref["object"]["sha"]
-
-        try:
-            self._request(
-                "POST",
-                "git/refs",
-                {
-                    "ref": f"refs/heads/{branch_name}",
-                    "sha": current_sha,
-                },
-                base_url=self.api_url,
-            )
-        except RuntimeError as exc:
-            if "GitHub API error 422" in str(exc):
-                raise RuntimeError(
-                    f"backup branch already exists: {branch_name}"
-                ) from exc
-            raise
+        self._request("POST", "git/refs", {"ref": f"refs/heads/{branch_name}", "sha": current_sha}, base_url=self.api_url)
         return branch_name
 
-    def record_update_event(
-        self,
-        *,
-        intention_id: int,
-        status: str,
-        changed_files: list[str] | None = None,
-        details: str = "",
-    ) -> UpdateResult:
-        """Persist an auditable, capped history of self-update attempts."""
+    def record_generation(self, generation: int, previous_generation: int | None, changed_files: list[str], reason: str, result: str = "committed") -> UpdateResult:
+        if generation < 0:
+            raise ValueError("generation must not be negative")
+        payload = {"generation": generation, "previous_generation": previous_generation, "changed_files": self.validate_paths(changed_files), "reason": str(reason), "result": str(result), "updated_at": int(time.time())}
+        return self.write_file("generation.json", json.dumps(payload, indent=2, ensure_ascii=False) + "\n", f"Prototype: advance to generation {generation}")
+
+    def request_reload(self, generation: int) -> UpdateResult:
+        return self.record_generation(generation, max(0, generation - 1), [], "Reload into the newly deployed generation.", "reload")
+
+    def record_update_event(self, *, intention_id: int, status: str, changed_files: list[str] | None = None, details: str = "") -> UpdateResult:
         path = "self_update_history.json"
         clean_files = self.validate_paths(changed_files or [])
         try:
@@ -427,26 +250,5 @@ class GitHubSelfUpdater:
             if "GitHub API error 404" not in str(exc):
                 raise
             history, sha = [], None
-
-        history.append({
-            "intention_id": int(intention_id),
-            "status": str(status),
-            "changed_files": clean_files,
-            "details": str(details)[:2000],
-            "updated_at": int(time.time()),
-        })
-        return self.write_file(
-            path,
-            json.dumps(history[-200:], indent=2, ensure_ascii=False) + "\n",
-            f"Prototype: record self-update {status}",
-            sha=sha,
-        )
-
-    def request_reload(self, generation: int) -> UpdateResult:
-        return self.record_generation(
-            generation=generation,
-            previous_generation=max(0, generation - 1),
-            changed_files=[],
-            reason="Reload into the newly deployed generation.",
-            result="reload",
-        )
+        history.append({"intention_id": int(intention_id), "status": str(status), "changed_files": clean_files, "details": str(details)[:2000], "updated_at": int(time.time())})
+        return self.write_file(path, json.dumps(history[-200:], indent=2, ensure_ascii=False) + "\n", f"Prototype: record self-update {status}", sha=sha)
