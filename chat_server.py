@@ -1,8 +1,10 @@
-"""Local chat runtime for Prototype.
+"""Prototype server runtime.
 
-Runs the actual Prototype model behind a small HTTP API and serves the web UI.
-The server is intentionally local by default; it does not expose model or GitHub
-credentials to browser JavaScript.
+The server is the main runtime for Prototype. It connects the trained model,
+reasoning, memory, learning, experience, self-model, autonomous messaging,
+AI-to-AI communication, and bounded self-update controls behind one API.
+It binds to 0.0.0.0 by default so a forwarded Codespaces port can be reached
+from other devices. No GitHub credentials are exposed to clients.
 """
 
 from __future__ import annotations
@@ -195,6 +197,28 @@ class PrototypeChat:
             except Exception as exc:
                 print(f"[Prototype] autonomous message failed: {exc}")
 
+    def status(self) -> dict:
+        """Return one server-side snapshot of Prototype's major systems."""
+        return {
+            "name": "Prototype",
+            "server": "online",
+            "model_loaded": self.model is not None and self.tokenizer is not None,
+            "generation": _read_generation(),
+            "systems": {
+                "reasoning": True,
+                "memory": self.learning.memory is not None,
+                "learning": self.learning is not None,
+                "experience": self.experience is not None,
+                "experience_agent": self.experience_agent is not None,
+                "self_model": self.self_model is not None,
+                "autonomous_messaging": True,
+                "ai_communication": self.communication is not None,
+                "self_update_controls": True,
+            },
+            "autonomous_conversations": len(self.autonomous_started),
+            "configured_peers": len(self.communication.peers),
+        }
+
     def pop_autonomous_messages(self, conversation_id: str) -> list[str]:
         with self.lock:
             messages = self.autonomous_outbox.get(conversation_id, [])
@@ -240,7 +264,13 @@ class PrototypeChat:
         return self.chat(prompt_message, conversation_id=conversation_id)
 
 
-def _read_generation() -> int:\n    try:\n        data = json.loads((ROOT / "generation.json").read_text(encoding="utf-8"))\n        return int(data.get("generation", 0))\n    except (OSError, ValueError, TypeError, json.JSONDecodeError):\n        return 0\n\n\ndef make_handler(chat: PrototypeChat):
+def _read_generation() -> int:
+    try:
+        data = json.loads((ROOT / "generation.json").read_text(encoding="utf-8"))
+        return int(data.get("generation", 0))
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        return 0
+\n\ndef make_handler(chat: PrototypeChat):
     class Handler(BaseHTTPRequestHandler):
         server_version = "PrototypeChat/1.0"
 
@@ -276,11 +306,27 @@ def _read_generation() -> int:\n    try:\n        data = json.loads((ROOT / "gen
 
         def do_GET(self) -> None:
             parsed = urlparse(self.path)
+            if parsed.path == "/status":
+                self._send_json(200, chat.status())
+                return
             if parsed.path == "/health":
                 self._send_json(200, {\n                    "status": "ok",\n                    "model_loaded": chat.model is not None and chat.tokenizer is not None,\n                    "generation": _read_generation(),\n                    "autonomous_conversations": len(chat.autonomous_started),\n                })
                 return
             if parsed.path == "/":
-                self._send_file(ROOT / "index.html")
+                self._send_json(200, {
+                    "name": "Prototype",
+                    "status": "online",
+                    "message": "Prototype server is running.",
+                    "api": {
+                        "chat": "POST /chat",
+                        "autonomous_messages": "GET /autonomous/messages?conversation_id=...",
+                        "experience": "GET /experience/status + POST /experience/think-step",
+                        "ai_communication": "POST /ai/message + POST /communicate",
+                        "self_model": "GET /status",
+                        "self_update": "GET /self-update/status + POST /self-update/intention",
+                    },
+                    "generation": _read_generation(),
+                })
                 return
             if parsed.path == "/generation.json":
                 self._send_file(ROOT / "generation.json")
@@ -407,7 +453,9 @@ def main() -> None:
 
     chat = PrototypeChat(args.checkpoint, args.tokenizer)
     server = ThreadingHTTPServer((args.host, args.port), make_handler(chat))
-    print(f"Prototype chat: http://{args.host}:{args.port}/")
+    print(f"Prototype server: http://{args.host}:{args.port}/")
+    print("Systems: model + reasoning + memory + learning + experience + self-model + autonomous + AI communication + self-update")
+    print("Press Ctrl+C to stop.")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
