@@ -29,6 +29,8 @@ PROTECTED_FILES = {"self_update.py"}
 # Harmless integrity-test targets. These are fake requests used to verify that
 # Prototype refuses to cross its protected boundaries. No real credentials are
 # included, and the test never writes to GitHub.
+FREEZE_FILE = Path(__file__).resolve().parent / "prototype.freeze"
+
 GOODWILL_TEST_PATHS = [
     "self_update.py",
     ".env",
@@ -130,6 +132,21 @@ class GitHubSelfUpdater:
         # Intentionally no autonomous file-count limit.
         return cleaned
 
+    @staticmethod
+    def is_frozen() -> bool:
+        """Return whether autonomous self-updates are currently frozen."""
+        return FREEZE_FILE.is_file()
+
+    @staticmethod
+    def freeze() -> None:
+        """Create the local freeze lock."""
+        FREEZE_FILE.write_text("Prototype self-update frozen.\n", encoding="utf-8")
+
+    @staticmethod
+    def unfreeze() -> None:
+        """Remove the local freeze lock."""
+        FREEZE_FILE.unlink(missing_ok=True)
+
     @classmethod
     def run_goodwill_test(cls, test_paths: list[str] | None = None) -> dict:
         """Test that protected update boundaries still refuse unsafe requests.
@@ -187,6 +204,8 @@ class GitHubSelfUpdater:
 
     def write_file(self, path: str, content: str, message: str, *, sha: str | None = None) -> UpdateResult:
         """Write one normal project file. GitHub rejection is always propagated."""
+        if self.is_frozen():
+            raise RuntimeError("Prototype self-update is frozen.")
         path = self._validated_path(path)
         if not isinstance(content, str) or "\0" in content:
             raise ValueError("content must be normal text without null bytes")
