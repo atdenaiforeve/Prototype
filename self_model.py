@@ -25,8 +25,8 @@ class SelfObservation:
 class SelfModel:
     """Build and persist a compact, observable model of Prototype itself."""
 
-    def __init__(self, root: Path | str = ".") -> None:
-        self.root = Path(root)
+    def __init__(self, root: Path | str | None = None) -> None:
+        self.root = Path(root) if root is not None else Path(__file__).resolve().parent
         self.identity = {
             "name": "Prototype",
             "type": "experimental self-modelling language system",
