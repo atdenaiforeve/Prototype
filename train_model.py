@@ -43,7 +43,7 @@ def make_windows(
         raise ValueError("training text is too short for the chosen context size")
 
     tokens = torch.tensor(token_ids, dtype=torch.long)
-    inputs = tokens.unfold(0, context_size, stride)
+    inputs = tokens[:-1].unfold(0, context_size, stride)
     targets = tokens[1:].unfold(0, context_size, stride)
     return inputs.contiguous(), targets.contiguous()
 
