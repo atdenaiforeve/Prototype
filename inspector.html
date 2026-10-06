@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prototype — What I Considered</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #050505;
+      --panel: #101010;
+      --border: #242424;
+      --text: #f2f2f2;
+      --muted: #929292;
+      --accent: #6ee7ff;
+      --good: #7ee787;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.5 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main {
+      width: min(1100px, 100%);
+      margin: 0 auto;
+      padding: 20px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+    h1, h2, p { margin: 0; }
+    h1 { font-size: 22px; }
+    .status {
+      color: var(--good);
+      border: 1px solid #24532d;
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    section {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      min-width: 0;
+    }
+    section.full { grid-column: 1 / -1; }
+    h2 {
+      font-size: 14px;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+    .empty {
+      color: var(--muted);
+      padding: 18px 0;
+    }
+    .item {
+      border-top: 1px solid var(--border);
+      padding: 10px 0;
+    }
+    .item:first-child { border-top: 0; padding-top: 0; }
+    .label { color: var(--muted); font-size: 12px; }
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: #d7d7d7;
+    }
+    .note {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 16px;
+    }
+    @media (max-width: 700px) {
+      main { padding: 14px; }
+      .grid { grid-template-columns: 1fr; }
+      section.full { grid-column: auto; }
+      header { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>What Prototype considered</h1>
+        <p class="note">Structured reasoning telemetry — not hidden chain-of-thought.</p>
+      </div>
+      <div class="status">INSPECTOR READY</div>
+    </header>
+
+    <div class="grid">
+      <section>
+        <h2>Memory retrieval</h2>
+        <div id="memory" class="empty">Waiting for a Prototype run…</div>
+      </section>
+
+      <section>
+        <h2>Memory context</h2>
+        <div id="context" class="empty">No memory context supplied yet.</div>
+      </section>
+
+      <section>
+        <h2>Reasoning candidates</h2>
+        <div id="reasoning" class="empty">No candidate outputs yet.</div>
+      </section>
+
+      <section>
+        <h2>Decision</h2>
+        <div id="decision" class="empty">No decision recorded yet.</div>
+      </section>
+
+      <section class="full">
+        <h2>Run metadata</h2>
+        <div id="metadata" class="empty">No run metadata yet.</div>
+      </section>
+    </div>
+
+    <p class="note">
+      This file is the dedicated inspector UI. The next integration step can feed it
+      real memory, reasoning, confidence, and decision events from Prototype.
+    </p>
+  </main>
+
+  <script>
+    window.PrototypeInspector = {
+      update(data) {
+        const safe = data || {};
+        const set = (id, value, empty) => {
+          const node = document.getElementById(id);
+          if (!node) return;
+          node.className = value ? "" : "empty";
+          node.textContent = value || empty;
+        };
+
+        set("memory", safe.memory, "No memories retrieved.");
+        set("context", safe.memory_context, "No memory context supplied yet.");
+        set("reasoning", safe.reasoning, "No candidate outputs yet.");
+        set("decision", safe.decision, "No decision recorded yet.");
+        set(
+          "metadata",
+          safe.metadata ? JSON.stringify(safe.metadata, null, 2) : "",
+          "No run metadata yet."
+        );
+      }
+    };
+  </script>
+</body>
+</html>
