@@ -113,7 +113,8 @@ document.getElementById("composer").addEventListener("submit",async e=>{
     if(!response.ok) throw new Error(data.error||"chat request failed");
     conversationId=data.conversation_id;
     thinking.textContent=data.reply;
-    status.textContent="Prototype online · conversation "+conversationId.slice(0,8);
+    // Keep the green satellite indicator visible after chatting.
+    status.textContent="🟢 SATELLITE CONNECTED · Prototype online · conversation "+conversationId.slice(0,8);
   }catch(error){
     thinking.textContent="I couldn't reach the Prototype runtime: "+error.message;
     status.textContent="Prototype runtime error";
