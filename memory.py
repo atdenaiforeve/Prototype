@@ -164,10 +164,12 @@ class MemoryEngine:
                 row = con.execute(
                     """
                     SELECT id FROM memories
-                    WHERE lower(trim(content)) = lower(trim(?)) AND archived = 0
+                    WHERE lower(trim(content)) = lower(trim(?))
+                      AND memory_type = ?
+                      AND archived = 0
                     LIMIT 1
                     """,
-                    (content,),
+                    (content, memory_type),
                 ).fetchone()
                 if row:
                     con.execute(
@@ -318,6 +320,9 @@ class MemoryEngine:
         include_archived: bool = False,
     ) -> list[dict[str, Any]]:
         """Return the most relevant memories using lexical overlap plus trust."""
+        query = str(query).strip()
+        if not query:
+            return []
         query_terms = _tokens(query)
         limit = max(1, int(limit))
 
@@ -335,7 +340,7 @@ class MemoryEngine:
             for row in rows:
                 text = row["content"]
                 overlap = len(query_terms & _tokens(text))
-                exact_bonus = 2.0 if query.strip().lower() in text.lower() else 0.0
+                exact_bonus = 2.0 if query.lower() in text.lower() else 0.0
                 trust = 0.75 * float(row["confidence"]) + 0.25 * float(row["importance"])
                 usage = min(1.0, float(row["access_count"]) / 20.0)
                 score = overlap * 3.0 + exact_bonus + trust + usage * 0.25
@@ -385,8 +390,11 @@ class MemoryEngine:
 
             fields, values = [], []
             if content is not None:
+                cleaned_content = content.strip()
+                if not cleaned_content:
+                    raise ValueError("Memory content cannot be empty.")
                 fields.append("content = ?")
-                values.append(content.strip())
+                values.append(cleaned_content)
             if memory_type is not None and memory_type in MEMORY_TYPES:
                 fields.append("memory_type = ?")
                 values.append(memory_type)
