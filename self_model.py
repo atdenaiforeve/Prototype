@@ -37,6 +37,8 @@ class SelfModel:
             "bounded reasoning",
             "learning from recorded feedback",
             "self-observation",
+            "self-update intention planning",
+            "bounded self-update validation",
         ]
         self.limitations = [
             "observations depend on files and runtime metadata being available",
@@ -122,6 +124,14 @@ class SelfModel:
             code=self._code_snapshot(),
             state=self.current_state,
         )
+
+    def latest_self_update_intention(self) -> dict[str, Any] | None:
+        """Expose the newest fresh self-update intention to the self-model."""
+        try:
+            from memory import get_memory
+            return get_memory().latest_self_update_intention()
+        except Exception:
+            return None
 
     def snapshot(self, observation: SelfObservation) -> dict[str, Any]:
         return {
