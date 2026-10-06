@@ -6,7 +6,7 @@ This project is an experiment to see how far we can develop our own language mod
 
 ## Current Status
 
-Prototype can now be run as a local chat application. The chat server connects the web interface to the trained model, reasoning, memory, learning loop, and self-model.
+Prototype now runs as a server-first runtime. The server connects the trained model, reasoning, memory, learning loop, experience system, self-model, autonomous messaging, AI communication, and bounded self-update controls.
 
 The repository also contains a bounded self-update foundation. Prototype can record a fresh update intention in memory, retrieve it, inspect ordinary repository files, validate a local checkout, create a rollback branch, and record an auditable update event. Protected files such as credentials, GitHub workflows, the memory database, and the self-update controller itself are not available to autonomous writes.
 
@@ -26,13 +26,9 @@ After training a model and creating `prototype_model.pt` and `vocabulary.json`:
 python chat_server.py
 ```
 
-Then open:
+The server binds to `0.0.0.0:8000` so a forwarded Codespaces port can be reached from another device. For a Codespaces deployment, use the public HTTPS URL for port 8000. The GitHub Pages web-live copy is no longer part of the Prototype runtime.
 
-```
-http://127.0.0.1:8000/
-```
-
-The browser talks to the local Python runtime through `/chat`. The GitHub Pages copy is still a static UI and cannot run the Python model by itself.
+`GET /` reports that the server is online. `GET /status` reports the state of the major Prototype systems. Chat is handled through `POST /chat`.
 
 The server keeps a short conversation history in memory and sends each message through Prototype's reasoning and memory systems. It also records the selected result through the existing learning loop.
 
@@ -112,13 +108,22 @@ Incoming messages are stored as external information in Prototype's memory. Prot
 
 ### Connecting a real remote AI
 
-The server is **local by default** at `127.0.0.1`. Another AI on the internet cannot reach that address.
-
-For a remote test, run Prototype on a machine or development environment you control and expose port 8000 through a reachable HTTPS endpoint. Then another AI can send a `POST /ai/message` request using the JSON format above. **No shared inbound key is currently required.**
+The server binds to `0.0.0.0` by default. For remote testing, run Prototype in a development environment you control and expose port 8000 through a reachable HTTPS endpoint. Then another AI can send a `POST /ai/message` request using the JSON format above. **No shared inbound key is currently required.**
 
 Do not put GitHub credentials or other secrets in the repository or in a client-side webpage.
 
 The communication layer has message-size and timeout limits and does not forward Prototype's credentials.
+
+## Server endpoints
+
+- `GET /` — server-online information and API map.
+- `GET /health` — lightweight health check.
+- `GET /status` — unified status for Prototype's connected systems.
+- `POST /chat` — normal conversation; starts the 10-second autonomous loop.
+- `GET /autonomous/messages?conversation_id=...` — retrieve autonomous messages.
+- `GET /experience/status` and `POST /experience/think-step` — environment and model-driven experience.
+- `POST /ai/message` and `POST /communicate` — AI-to-AI communication.
+- `GET /self-update/status` and `POST /self-update/intention` — bounded self-update controls.
 
 ## Planned next stage
 
