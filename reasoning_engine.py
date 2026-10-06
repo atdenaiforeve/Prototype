@@ -47,8 +47,17 @@ def reason(
         raise ValueError("candidates must be positive")
     if candidates > 8:
         raise ValueError("candidates must be at most 8")
+    if max_new_tokens < 1:
+        raise ValueError("max_new_tokens must be positive")
+    if temperature <= 0:
+        raise ValueError("temperature must be positive")
+    if top_k < 1:
+        raise ValueError("top_k must be positive")
 
-    workspace = workspace or ReasoningWorkspace(max_hypotheses=candidates)
+    if workspace is None:
+        workspace = ReasoningWorkspace(max_hypotheses=candidates)
+    elif workspace.max_hypotheses < candidates:
+        raise ValueError("workspace max_hypotheses must be at least candidates")
     workspace.clear()
 
     for index in range(candidates):
