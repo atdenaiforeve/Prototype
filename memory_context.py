@@ -20,11 +20,12 @@ def format_memory_context(
     max_chars = max(0, int(max_chars))
     max_memories = max(0, int(max_memories))
     max_memory_chars = max(1, int(max_memory_chars))
-    if max_chars == 0 or max_memories == 0 or not memories:
+    header = "[MEMORY CONTEXT]\n"
+    if max_chars < len(header) or max_memories == 0 or not memories:
         return ""
 
     lines: list[str] = []
-    used = len("[MEMORY CONTEXT]\n")
+    used = len(header)
     for memory in memories[:max_memories]:
         content = " ".join(str(memory.get("content", "")).split())
         if not content:
@@ -39,7 +40,7 @@ def format_memory_context(
         lines.append(line)
         used += extra
 
-    return "[MEMORY CONTEXT]\n" + "\n".join(lines) if lines else ""
+    return header + "\n".join(lines) if lines else ""
 
 
 def build_prompt(prompt: str, memory_context: str = "") -> str:
