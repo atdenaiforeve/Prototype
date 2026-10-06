@@ -369,6 +369,7 @@ def _read_generation() -> int:
                 "/ai/message",
                 "/self-update/intention",
                 "/self-update/freeze",
+                "/self-update/unfreeze",
             }
             if parsed.path not in allowed:
                 self._send_json(404, {"error": "not found"})
@@ -436,6 +437,11 @@ def _read_generation() -> int:
                     from self_update import GitHubSelfUpdater
                     GitHubSelfUpdater.freeze()
                     self._send_json(200, {"frozen": True})
+                    return
+                if parsed.path == "/self-update/unfreeze":
+                    from self_update import GitHubSelfUpdater
+                    GitHubSelfUpdater.unfreeze()
+                    self._send_json(200, {"frozen": False})
                     return
             except ValueError as exc:
                 self._send_json(400, {"error": str(exc)})
