@@ -48,6 +48,37 @@ class SelfUpdateTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             GitHubSelfUpdater.validate_paths(paths)
 
+    def test_read_paths_can_include_protected_write_files(self):
+        self.assertEqual(
+            GitHubSelfUpdater.validate_read_paths(
+                ["self_update.py", ".github/workflows/full-tests.yml"]
+            ),
+            ["self_update.py", ".github/workflows/full-tests.yml"],
+        )
+
+    def test_read_paths_still_reject_secrets_and_git_metadata(self):
+        for path in (".env", "memory.db", ".git/config", "../outside.py"):
+            with self.subTest(path=path):
+                with self.assertRaises(ValueError):
+                    GitHubSelfUpdater.validate_read_paths([path])
+
+    def test_proposal_flags_manual_protected_code(self):
+        updater = object.__new__(GitHubSelfUpdater)
+        intention = {
+            "id": 1,
+            "content": "Improve the updater",
+            "metadata": {"reason": "Needs safer inspection."},
+        }
+        proposal = updater.build_proposal(
+            intention=intention,
+            candidate_files=["self_update.py", "reasoning.py"],
+        )
+        self.assertTrue(proposal.requires_manual_approval)
+        self.assertEqual(
+            proposal.files,
+            ["self_update.py", "reasoning.py"],
+        )
+
     def test_duplicate_paths_are_removed(self):
         self.assertEqual(
             GitHubSelfUpdater.validate_paths(["model.py", "model.py"]),
