@@ -199,11 +199,15 @@ class PrototypeChat:
 
     def status(self) -> dict:
         """Return one server-side snapshot of Prototype's major systems."""
+        from self_update import GitHubSelfUpdater
+
+        frozen = GitHubSelfUpdater.is_frozen()
         return {
             "name": "Prototype",
             "server": "online",
             "model_loaded": self.model is not None and self.tokenizer is not None,
             "generation": _read_generation(),
+            "self_update_frozen": frozen,
             "systems": {
                 "reasoning": True,
                 "memory": self.learning.memory is not None,
@@ -214,6 +218,7 @@ class PrototypeChat:
                 "autonomous_messaging": True,
                 "ai_communication": self.communication is not None,
                 "self_update_controls": True,
+                "self_update_frozen": frozen,
             },
             "autonomous_conversations": len(self.autonomous_started),
             "configured_peers": len(self.communication.peers),
