@@ -142,6 +142,8 @@ class GitHubSelfUpdater:
         path = self._validated_path(path)
         if not isinstance(content, str):
             raise TypeError("content must be a string")
+        if "\0" in content:
+            raise ValueError("content contains a null byte")
         if not str(message).strip():
             raise ValueError("commit message must not be empty")
 
@@ -270,6 +272,8 @@ class GitHubSelfUpdater:
     def _validated_general_path(raw: str) -> str:
         if not isinstance(raw, str):
             raise TypeError("repository path must be a string")
+        if "\0" in raw:
+            raise ValueError("repository path contains a null byte")
         path = raw.replace("\\", "/").strip()
         parts = Path(path).parts
         if not path or path.startswith(("/", "~")) or ".." in parts:
