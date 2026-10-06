@@ -1,3 +1,4 @@
+import unittest
 from pathlib import Path
 
 from self_model import SelfModel
@@ -25,37 +26,71 @@ class FakeModel:
         return [FakeParameter(10), FakeParameter(20)]
 
 
-def test_self_model_observes_generation_model_and_code(tmp_path: Path) -> None:
-    (tmp_path / "generation.json").write_text(
-        '{"generation": 7}', encoding="utf-8"
-    )
-    (tmp_path / "example.py").write_text("print('x')", encoding="utf-8")
+class SelfModelTests(unittest.TestCase):
+    def test_self_model_observes_generation_model_and_code(self):
+        from tempfile import TemporaryDirectory
 
-    observation = SelfModel(tmp_path).observe(model=FakeModel())
+        with TemporaryDirectory() as directory:
+            tmp_path = Path(directory)
+            (tmp_path / "generation.json").write_text(
+                '{"generation": 7}', encoding="utf-8"
+            )
+            (tmp_path / "example.py").write_text("print('x')", encoding="utf-8")
 
-    assert observation.generation == 7
-    assert observation.model["parameters"] == 30
-    assert observation.model["context_size"] == 8
-    assert observation.code["python_file_count"] == 1
-    assert observation.code["python_files"][0]["path"] == "example.py"
+            observation = SelfModel(tmp_path).observe(model=FakeModel())
+
+            self.assertEqual(observation.generation, 7)
+            self.assertEqual(observation.model["parameters"], 30)
+            self.assertEqual(observation.model["context_size"], 8)
+            self.assertEqual(observation.code["python_file_count"], 1)
+            self.assertEqual(observation.code["python_files"][0]["path"], "example.py")
+
+    def test_self_model_save_and_load(self):
+        from tempfile import TemporaryDirectory
+
+        with TemporaryDirectory() as directory:
+            tmp_path = Path(directory)
+            model = SelfModel(tmp_path)
+            observation = model.observe(state={"mode": "running"})
+            output = tmp_path / "self_model.json"
+
+            model.save(observation, output)
+            loaded = SelfModel.load(output)
+
+            self.assertEqual(loaded["identity"]["name"], "Prototype")
+            self.assertEqual(loaded["observation"]["state"]["mode"], "running")
+
+    def test_self_model_is_observational(self):
+        from tempfile import TemporaryDirectory
+
+        with TemporaryDirectory() as directory:
+            model = SelfModel(Path(directory))
+            observation = model.observe()
+            snapshot = model.snapshot(observation)
+
+            self.assertNotIn("approve", snapshot)
+            self.assertNotIn("veto", snapshot)
+
+    def test_record_and_retrieve_self_update_intention(self):
+        from tempfile import TemporaryDirectory
+
+        with TemporaryDirectory() as directory:
+            memory_root = Path(directory)
+            model = SelfModel(memory_root)
+            intention_id = model.record_self_update_intention(
+                "Improve the reasoning monitor",
+                reason="The monitor needs clearer signals.",
+                freshness_seconds=3600,
+            )
+            latest = model.latest_self_update_intention()
+
+            self.assertEqual(latest["id"], intention_id)
+            self.assertEqual(latest["content"], "Improve the reasoning monitor")
+            self.assertEqual(
+                latest["metadata"]["reason"],
+                "The monitor needs clearer signals.",
+            )
 
 
-def test_self_model_save_and_load(tmp_path: Path) -> None:
-    model = SelfModel(tmp_path)
-    observation = model.observe(state={"mode": "running"})
-    output = tmp_path / "self_model.json"
-
-    model.save(observation, output)
-    loaded = SelfModel.load(output)
-
-    assert loaded["identity"]["name"] == "Prototype"
-    assert loaded["observation"]["state"]["mode"] == "running"
-
-
-def test_self_model_is_observational(tmp_path: Path) -> None:
-    model = SelfModel(tmp_path)
-    observation = model.observe()
-    snapshot = model.snapshot(observation)
-
-    assert "approve" not in snapshot
-    assert "veto" not in snapshot
+if __name__ == "__main__":
+    unittest.main()
