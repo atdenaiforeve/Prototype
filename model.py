@@ -27,8 +27,18 @@ class PrototypeLanguageModel(nn.Module):
             raise ValueError("vocab_size must be positive")
         if context_size < 1:
             raise ValueError("context_size must be positive")
+        if embedding_size < 1:
+            raise ValueError("embedding_size must be positive")
+        if hidden_size < 1:
+            raise ValueError("hidden_size must be positive")
+        if num_layers < 1:
+            raise ValueError("num_layers must be positive")
+        if num_heads < 1:
+            raise ValueError("num_heads must be positive")
         if embedding_size % num_heads != 0:
             raise ValueError("embedding_size must be divisible by num_heads")
+        if not 0.0 <= dropout < 1.0:
+            raise ValueError("dropout must be between 0 and 1")
 
         self.vocab_size = vocab_size
         self.embedding_size = embedding_size
