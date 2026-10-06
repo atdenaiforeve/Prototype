@@ -1,5 +1,8 @@
 import unittest
 from pathlib import Path
+from unittest.mock import patch
+
+from memory import MemoryEngine
 
 from self_model import SelfModel
 
@@ -77,12 +80,14 @@ class SelfModelTests(unittest.TestCase):
         with TemporaryDirectory() as directory:
             memory_root = Path(directory)
             model = SelfModel(memory_root)
-            intention_id = model.record_self_update_intention(
-                "Improve the reasoning monitor",
-                reason="The monitor needs clearer signals.",
-                freshness_seconds=3600,
-            )
-            latest = model.latest_self_update_intention()
+            memory = MemoryEngine(memory_root / "memory.db")
+            with patch("memory.get_memory", return_value=memory):
+                intention_id = model.record_self_update_intention(
+                    "Improve the reasoning monitor",
+                    reason="The monitor needs clearer signals.",
+                    freshness_seconds=3600,
+                )
+                latest = model.latest_self_update_intention()
 
             self.assertEqual(latest["id"], intention_id)
             self.assertEqual(latest["content"], "Improve the reasoning monitor")
