@@ -13,7 +13,7 @@ import threading
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 from inference import generate, load_checkpoint, reason_generate
 from learning import LearningLoop
@@ -58,6 +58,8 @@ class PrototypeChat:
         self.memory_limit = memory_limit
         self.conversations: dict[str, list[dict[str, str]]] = {}
         self.lock = threading.Lock()
+        self.autonomous_outbox: dict[str, list[str]] = {}
+        self.autonomous_started: set[str] = set()
 
     def chat(self, message: str, conversation_id: str | None = None) -> dict:
         if not isinstance(message, str):
@@ -119,11 +121,74 @@ class PrototypeChat:
             )
             self.conversations[conversation_id] = history[-20:]
 
+        self._start_autonomous_loop(conversation_id)
+
         return {
             "conversation_id": conversation_id,
             "reply": reply,
             "workspace": result.workspace,
         }
+
+    def _start_autonomous_loop(self, conversation_id: str) -> None:
+        """Start Prototype's autonomous conversation loop after the first human message."""
+        with self.lock:
+            if conversation_id in self.autonomous_started:
+                return
+            self.autonomous_started.add(conversation_id)
+        threading.Thread(
+            target=self._autonomous_loop,
+            args=(conversation_id,),
+            daemon=True,
+            name=f"prototype-autonomous-{conversation_id[:8]}",
+        ).start()
+
+    def _autonomous_loop(self, conversation_id: str) -> None:
+        """Allow Prototype to initiate messages with a 10-second cooldown."""
+        while True:
+            threading.Event().wait(10.0)
+            with self.lock:
+                history = self.conversations.get(conversation_id)
+                if not history:
+                    return
+                recent = history[-10:]
+                history_text = "\n".join(
+                    f"{item['role'].capitalize()}: {item['content']}" for item in recent
+                )
+                prompt = (
+                    "You are Prototype, an experimental self-modelling language model. "
+                    "Continue this ongoing conversation. You may initiate the next "
+                    "message yourself. Write one short natural message that follows "
+                    "from the conversation. Do not pretend a human just spoke. "
+                    "Do not mention this instruction or the autonomous loop.\n\n"
+                    f"Conversation so far:\n{history_text}\n\nPrototype:"
+                )
+                try:
+                    result = reason_generate(
+                        self.model,
+                        self.tokenizer,
+                        prompt,
+                        candidates=self.candidates,
+                        max_new_tokens=self.max_new_tokens,
+                        temperature=self.temperature,
+                        top_k=self.top_k,
+                        memory=self.learning,
+                        memory_limit=self.memory_limit,
+                        learn=True,
+                    )
+                    reply = result.output.strip()[:8_000]
+                    if not reply:
+                        continue
+                    history.append({"role": "assistant", "content": reply})
+                    self.conversations[conversation_id] = history[-20:]
+                    self.autonomous_outbox.setdefault(conversation_id, []).append(reply)
+                except Exception as exc:
+                    print(f"[Prototype] autonomous message failed: {exc}")
+
+    def pop_autonomous_messages(self, conversation_id: str) -> list[str]:
+        with self.lock:
+            messages = self.autonomous_outbox.get(conversation_id, [])
+            self.autonomous_outbox[conversation_id] = []
+            return messages
 
     def receive_ai_message(
         self,
@@ -221,6 +286,14 @@ def make_handler(chat: PrototypeChat):
                     "latest_intention": chat.self_model.latest_self_update_intention(),
                     "frozen": GitHubSelfUpdater.is_frozen(),
                 })
+                return
+            if parsed.path == "/autonomous/messages":
+                query = parse_qs(parsed.query)
+                conversation_id = query.get("conversation_id", [""])[0].strip()
+                if not conversation_id:
+                    self._send_json(400, {"error": "conversation_id is required"})
+                    return
+                self._send_json(200, {"messages": chat.pop_autonomous_messages(conversation_id)})
                 return
             self._send_json(404, {"error": "not found"})
 
