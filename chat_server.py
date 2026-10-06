@@ -17,6 +17,9 @@ from urllib.parse import urlparse
 
 from inference import load_checkpoint, reason_generate
 from learning import LearningLoop
+from communication import AICommunication
+from experience import ExperienceEngine
+from self_model import SelfModel
 
 
 ROOT = Path(__file__).resolve().parent
@@ -40,6 +43,9 @@ class PrototypeChat:
     ) -> None:
         self.model, self.tokenizer, _ = load_checkpoint(checkpoint, tokenizer)
         self.learning = LearningLoop()
+        self.experience = ExperienceEngine(memory=self.learning.memory)
+        self.communication = AICommunication(memory=self.learning.memory)
+        self.self_model = SelfModel()
         self.candidates = candidates
         self.max_new_tokens = max_new_tokens
         self.temperature = temperature
@@ -154,11 +160,22 @@ def make_handler(chat: PrototypeChat):
             if parsed.path == "/generation.json":
                 self._send_file(ROOT / "generation.json")
                 return
+            if parsed.path == "/experience/status":
+                self._send_json(200, chat.experience.status())
+                return
+            if parsed.path == "/peers":
+                self._send_json(200, {"peers": chat.communication.list_peers()})
+                return
+            if parsed.path == "/self-update/status":
+                self._send_json(200, {
+                    "latest_intention": chat.self_model.latest_self_update_intention(),
+                })
+                return
             self._send_json(404, {"error": "not found"})
 
         def do_POST(self) -> None:
             parsed = urlparse(self.path)
-            if parsed.path != "/chat":
+            if parsed.path not in {"/chat", "/experience/step", "/communicate", "/self-update/intention"}:
                 self._send_json(404, {"error": "not found"})
                 return
 
@@ -169,11 +186,38 @@ def make_handler(chat: PrototypeChat):
                 body = json.loads(self.rfile.read(length).decode("utf-8"))
                 if not isinstance(body, dict):
                     raise ValueError("request body must be a JSON object")
-                result = chat.chat(
-                    body.get("message", ""),
-                    body.get("conversation_id"),
-                )
-                self._send_json(200, result)
+                if parsed.path == "/chat":
+                    result = chat.chat(
+                        body.get("message", ""),
+                        body.get("conversation_id"),
+                    )
+                    self._send_json(200, result)
+                    return
+
+                if parsed.path == "/experience/step":
+                    experience = chat.experience.step(body.get("action", ""))
+                    self._send_json(200, experience.as_dict())
+                    return
+
+                if parsed.path == "/communicate":
+                    result = chat.communication.send(
+                        body.get("peer", ""),
+                        body.get("message", ""),
+                        context=body.get("context"),
+                    )
+                    self._send_json(200, result)
+                    return
+
+                if parsed.path == "/self-update/intention":
+                    memory_id = chat.self_model.record_self_update_intention(
+                        body.get("goal", ""),
+                        reason=body.get("reason", ""),
+                    )
+                    self._send_json(200, {
+                        "memory_id": memory_id,
+                        "intention": chat.self_model.latest_self_update_intention(),
+                    })
+                    return
             except ValueError as exc:
                 self._send_json(400, {"error": str(exc)})
             except Exception as exc:
