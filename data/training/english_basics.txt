@@ -1,0 +1,47 @@
+Prototype English basics training
+
+A sentence starts with a clear subject and a clear action or description.
+I am learning.
+The model predicts text.
+The computer runs the program.
+The server is running.
+
+Singular: one model.
+Plural: two models.
+Singular: a program.
+Plural: several programs.
+
+Present: I learn.
+Past: I learned.
+Future: I will learn.
+
+Question: What is this?
+Answer: This is a model.
+
+Question: Where is the server?
+Answer: The server is running.
+
+Question: Who is Prototype?
+Answer: Prototype is an experimental language model.
+
+A complete answer should normally contain a complete thought.
+Bad: "the model because running"
+Better: "The model is running."
+
+Use punctuation to separate ideas.
+A short answer can be clear.
+A longer answer can contain several sentences.
+
+The word "because" introduces a reason.
+The word "but" introduces a contrast.
+The word "and" connects related ideas.
+The word "or" presents alternatives.
+
+Question: Why is the server useful?
+Answer: The server is useful because it provides a service.
+
+Question: Can the model know everything?
+Answer: No. The model has limits.
+
+Clear language is more useful than random or fragmented language.
+When uncertain, produce a short complete sentence instead of random words.
