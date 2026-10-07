@@ -1,9 +1,7 @@
 """Subword tokenizer for Prototype.
 
 Prototype uses a small byte-independent BPE-style subword tokenizer. It learns
-frequent character-pair merges from the training corpus, capped at 8,192
-vocabulary entries. This lets unseen words be represented by smaller pieces
-instead of requiring a whole-word vocabulary entry.
+frequent character-pair merges from the training corpus.
 """
 
 from __future__ import annotations
@@ -67,13 +65,14 @@ class Tokenizer:
         words = TOKEN_PATTERN.findall(text.lower())
         sequences: Counter[tuple[str, ...]] = Counter()
         for word in words:
-            if not word:
-                continue
-            sequences[tuple(WORD_BOUNDARY + word)] += 1
+            if word:
+                sequences[tuple(WORD_BOUNDARY + word)] += 1
         return sequences
 
     @staticmethod
-    def _pair_counts(sequences: Counter[tuple[str, ...]]) -> Counter[tuple[str, str]]:
+    def _pair_counts(
+        sequences: Counter[tuple[str, ...]],
+    ) -> Counter[tuple[str, str]]:
         pairs: Counter[tuple[str, str]] = Counter()
         for symbols, count in sequences.items():
             for left, right in zip(symbols, symbols[1:]):
@@ -89,7 +88,10 @@ class Tokenizer:
         output: list[str] = []
         index = 0
         while index < len(symbols):
-            if index + 1 < len(symbols) and (symbols[index], symbols[index + 1]) == pair:
+            if (
+                index + 1 < len(symbols)
+                and (symbols[index], symbols[index + 1]) == pair
+            ):
                 output.append(merged)
                 index += 2
             else:
@@ -103,100 +105,147 @@ class Tokenizer:
             raise TypeError("text must be a string")
         if not text.strip():
             raise ValueError("training text must not be empty")
+
         self._reset_special_tokens()
         self.frequencies.clear()
         self.merges.clear()
 
         sequences = self._word_sequences(text)
 
-        # Seed the vocabulary with every character/punctuation symbol we see.
-        symbols = sorted({symbol for word in sequences for symbol in word})
+        symbols = sorted(
+            {symbol for word in sequences for symbol in word}
+        )
         for symbol in symbols:
             self._add_token(symbol)
 
-        # Add frequent merged pieces until the configured vocabulary limit.
         while len(self.token_to_id) < self.vocab_limit:
             pairs = self._pair_counts(sequences)
             candidates = [
                 (count, pair)
                 for pair, count in pairs.items()
-                if count >= self.min_frequency and pair[0] != "" and pair[1] != ""
+                if count >= self.min_frequency
             ]
             if not candidates:
                 break
 
-            _, pair = max(candidates, key=lambda item: (item[0], item[1]))
+            _, pair = max(
+                candidates,
+                key=lambda item: (item[0], item[1]),
+            )
             merged = pair[0] + pair[1]
+
             if not self._add_token(merged):
                 break
 
             self.merges.append(pair)
-            sequences = Counter(
-                {
-                    self._merge_sequence(word, pair, merged): count
-                    for word, count in sequences.items()
-                }
-            )
 
-        # Frequencies are useful metadata, but the tokenizer no longer depends
-        # on whole-word entries.
-        self.frequencies.update(TOKEN_PATTERN.findall(text.lower()))
+            # Preserve counts when multiple distinct sequences collapse into
+            # the same merged sequence. The old dictionary-comprehension
+            # implementation silently overwrote duplicates here.
+            merged_sequences: Counter[tuple[str, ...]] = Counter()
+            for word, count in sequences.items():
+                merged_sequences[
+                    self._merge_sequence(word, pair, merged)
+                ] += count
+            sequences = merged_sequences
+
+        self.frequencies.update(
+            TOKEN_PATTERN.findall(text.lower())
+        )
+
         return self.tokenize(text)
 
     def _apply_merges(self, word: str) -> list[str]:
         pieces = list(WORD_BOUNDARY + word)
-        merge_map = {pair: pair[0] + pair[1] for pair in self.merges}
+
         for pair in self.merges:
-            merged = merge_map[pair]
+            merged = pair[0] + pair[1]
             output: list[str] = []
             index = 0
+
             while index < len(pieces):
-                if index + 1 < len(pieces) and (pieces[index], pieces[index + 1]) == pair:
+                if (
+                    index + 1 < len(pieces)
+                    and (pieces[index], pieces[index + 1]) == pair
+                ):
                     output.append(merged)
                     index += 2
                 else:
                     output.append(pieces[index])
                     index += 1
+
             pieces = output
+
         return pieces
 
     def tokenize(self, text: str) -> list[str]:
         """Convert text into learned subword/punctuation pieces."""
         output: list[str] = []
+
         for token in TOKEN_PATTERN.findall(text.lower()):
             if token.isalnum() or "_" in token:
                 output.extend(self._apply_merges(token))
             else:
                 output.append(token)
+
         return output
 
-    def encode(self, text: str, add_boundaries: bool = True) -> list[int]:
+    def encode(
+        self,
+        text: str,
+        add_boundaries: bool = True,
+    ) -> list[int]:
         ids: list[int] = []
+
         if add_boundaries:
             ids.append(SPECIAL_TOKENS["<BOS>"])
 
         for token in self.tokenize(text):
-            ids.append(self.token_to_id.get(token, SPECIAL_TOKENS["<UNK>"]))
+            ids.append(
+                self.token_to_id.get(
+                    token,
+                    SPECIAL_TOKENS["<UNK>"],
+                )
+            )
 
         if add_boundaries:
             ids.append(SPECIAL_TOKENS["<EOS>"])
+
         return ids
 
-    def decode(self, ids: list[int], skip_special: bool = True) -> str:
+    def decode(
+        self,
+        ids: list[int],
+        skip_special: bool = True,
+    ) -> str:
         tokens = [
-            self.id_to_token.get(int(token_id), "<UNK>")
+            self.id_to_token.get(
+                int(token_id),
+                "<UNK>",
+            )
             for token_id in ids
         ]
+
         if skip_special:
             tokens = [
-                token for token in tokens
+                token
+                for token in tokens
                 if token not in SPECIAL_TOKENS
             ]
 
         text = ""
+
         for token in tokens:
-            boundary = token.startswith(WORD_BOUNDARY)
-            piece = token[len(WORD_BOUNDARY):] if boundary else token
+            boundary = token.startswith(
+                WORD_BOUNDARY
+            )
+
+            piece = (
+                token[len(WORD_BOUNDARY):]
+                if boundary
+                else token
+            )
+
             if boundary:
                 if text:
                     text += " "
@@ -204,12 +253,12 @@ class Tokenizer:
             elif not text:
                 text = piece
             elif piece.isalnum() or "_" in piece:
-                # Character/subword pieces are joined without spaces.
                 text += piece
             elif piece in ".,!?;:)]}%":
                 text += piece
             else:
                 text += " " + piece
+
         return text
 
     @property
@@ -218,56 +267,147 @@ class Tokenizer:
 
     def save(self) -> None:
         data = {
-            "version": 3,
+            "version": 4,
             "vocab_limit": self.vocab_limit,
             "min_frequency": self.min_frequency,
             "token_to_id": self.token_to_id,
             "frequencies": dict(self.frequencies),
             "merges": [list(pair) for pair in self.merges],
         }
+
         self.model_path.write_text(
-            json.dumps(data, indent=2, ensure_ascii=False),
+            json.dumps(
+                data,
+                indent=2,
+                ensure_ascii=False,
+            ),
             encoding="utf-8",
         )
 
     def load(self) -> None:
         if not self.model_path.exists():
             return
+
         try:
-            data = json.loads(self.model_path.read_text(encoding="utf-8"))
+            data = json.loads(
+                self.model_path.read_text(
+                    encoding="utf-8"
+                )
+            )
+
             token_to_id = {
                 str(token): int(token_id)
-                for token, token_id in data.get("token_to_id", {}).items()
+                for token, token_id
+                in data.get("token_to_id", {}).items()
             }
-            if any(token_to_id.get(token) != token_id for token, token_id in SPECIAL_TOKENS.items()):
+
+            if any(
+                token_to_id.get(token) != token_id
+                for token, token_id
+                in SPECIAL_TOKENS.items()
+            ):
                 return
+
             ids = list(token_to_id.values())
-            if len(ids) != len(set(ids)) or sorted(ids) != list(range(len(ids))):
+
+            if (
+                len(ids) != len(set(ids))
+                or sorted(ids) != list(range(len(ids)))
+            ):
                 return
-            if len(token_to_id) > int(data.get("vocab_limit", self.vocab_limit)):
+
+            saved_limit = int(
+                data.get(
+                    "vocab_limit",
+                    self.vocab_limit,
+                )
+            )
+
+            if len(token_to_id) > saved_limit:
                 return
+
             self.token_to_id = token_to_id
-            self.id_to_token = {value: key for key, value in token_to_id.items()}
-            self.frequencies = Counter(data.get("frequencies", {}))
+            self.id_to_token = {
+                value: key
+                for key, value
+                in token_to_id.items()
+            }
+
+            self.frequencies = Counter(
+                data.get(
+                    "frequencies",
+                    {},
+                )
+            )
+
             self.merges = [
-                (str(pair[0]), str(pair[1]))
+                (
+                    str(pair[0]),
+                    str(pair[1]),
+                )
                 for pair in data.get("merges", [])
-                if isinstance(pair, list) and len(pair) == 2
+                if (
+                    isinstance(pair, list)
+                    and len(pair) == 2
+                )
             ]
-            self.vocab_limit = int(data.get("vocab_limit", self.vocab_limit))
-            self.min_frequency = max(1, int(data.get("min_frequency", self.min_frequency)))
-            if self.vocab_limit < len(SPECIAL_TOKENS):
-                raise ValueError("saved vocab_limit is too small")
-        except (OSError, ValueError, TypeError, json.JSONDecodeError):
+
+            self.vocab_limit = saved_limit
+
+            self.min_frequency = max(
+                1,
+                int(
+                    data.get(
+                        "min_frequency",
+                        self.min_frequency,
+                    )
+                ),
+            )
+
+            if (
+                self.vocab_limit
+                < len(SPECIAL_TOKENS)
+            ):
+                raise ValueError(
+                    "saved vocab_limit is too small"
+                )
+
+        except (
+            OSError,
+            ValueError,
+            TypeError,
+            json.JSONDecodeError,
+        ):
             self._reset_special_tokens()
 
 
 if __name__ == "__main__":
     tokenizer = Tokenizer()
-    tokenizer.learn("The cat sits on the mat. Prototype learns language.")
+    tokenizer.learn(
+        "The cat sits on the mat. "
+        "Prototype learns language."
+    )
     tokenizer.save()
-    encoded = tokenizer.encode("The cats learn language.")
-    print("Vocabulary size:", tokenizer.vocabulary_size)
-    print("Tokens:", tokenizer.tokenize("The cats learn language."))
-    print("Token IDs:", encoded)
-    print("Decoded:", tokenizer.decode(encoded))
+
+    encoded = tokenizer.encode(
+        "The cats learn language."
+    )
+
+    print(
+        "Vocabulary size:",
+        tokenizer.vocabulary_size,
+    )
+    print(
+        "Tokens:",
+        tokenizer.tokenize(
+            "The cats learn language."
+        ),
+    )
+    print(
+        "Token IDs:",
+        encoded,
+    )
+    print(
+        "Decoded:",
+        tokenizer.decode(encoded),
+    )
