@@ -302,6 +302,12 @@ def main() -> None:
     )
     parser.add_argument("--vocab-limit", type=int, default=8192)
     parser.add_argument(
+        "--token-cache",
+        type=Path,
+        default=Path("data/cache/training_tokens.json"),
+        help="cache encoded training tokens to avoid repeating tokenizer work",
+    )
+    parser.add_argument(
         "--checkpoint",
         type=Path,
         default=Path("prototype_model.pt"),
@@ -334,10 +340,24 @@ def main() -> None:
         model_path="vocabulary.json",
         vocab_limit=args.vocab_limit,
     )
-    tokenizer.learn(text)
-    tokenizer.save()
 
-    token_ids = tokenizer.encode(text, add_boundaries=True)
+    # Reuse the tokenizer and encoded tokens when the training text has not changed.
+    token_ids: list[int] | None = None
+    if args.token_cache.exists():
+        try:
+            data = json.loads(args.token_cache.read_text(encoding="utf-8"))
+            if data.get("fingerprint") == token_cache_fingerprint(text, tokenizer):
+                cached = data.get("token_ids")
+                if isinstance(cached, list) and cached:
+                    token_ids = [int(token_id) for token_id in cached]
+                    print(f"token cache: loaded {len(token_ids)} tokens from {args.token_cache}")
+        except (OSError, ValueError, TypeError, json.JSONDecodeError):
+            token_ids = None
+
+    if token_ids is None:
+        tokenizer.learn(text)
+        tokenizer.save()
+        token_ids = load_or_build_token_ids(text, tokenizer, args.token_cache)
     train_x, train_y, val_x, val_y = build_data(
         token_ids,
         args.context_size,
