@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import json
 import threading
+import time
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -28,6 +29,8 @@ from self_model import SelfModel
 ROOT = Path(__file__).resolve().parent
 DEFAULT_CHECKPOINT = ROOT / "prototype_model.pt"
 DEFAULT_TOKENIZER = ROOT / "vocabulary.json"
+AI_PEER_COOLDOWN_SECONDS = 10.0
+MAX_AI_CONTEXT_CHARS = 4_000
 
 
 class PrototypeChat:
@@ -62,6 +65,7 @@ class PrototypeChat:
         self.lock = threading.Lock()
         self.autonomous_outbox: dict[str, list[str]] = {}
         self.autonomous_started: set[str] = set()
+        self.peer_last_message: dict[str, float] = {}
 
     def chat(self, message: str, conversation_id: str | None = None) -> dict:
         if not isinstance(message, str):
@@ -251,6 +255,26 @@ class PrototypeChat:
         if context is not None and not isinstance(context, dict):
             raise ValueError("context must be a JSON object")
 
+        context_payload = context or {}
+        try:
+            context_text = json.dumps(context_payload, ensure_ascii=False, separators=(",", ":"))
+        except (TypeError, ValueError) as exc:
+            raise ValueError("context must contain JSON-compatible values") from exc
+        if len(context_text) > MAX_AI_CONTEXT_CHARS:
+            raise ValueError("context is too large")
+
+        now = time.monotonic()
+        with self.lock:
+            previous = self.peer_last_message.get(sender)
+            if previous is not None:
+                elapsed = now - previous
+                if elapsed < AI_PEER_COOLDOWN_SECONDS:
+                    remaining = max(0.0, AI_PEER_COOLDOWN_SECONDS - elapsed)
+                    raise ValueError(
+                        f"peer cooldown active; retry in {remaining:.1f} seconds"
+                    )
+            self.peer_last_message[sender] = now
+
         self.learning.memory.remember(
             f"AI peer {sender} said: {message}",
             memory_type="experience",
@@ -258,7 +282,7 @@ class PrototypeChat:
             confidence=0.5,
             source=f"peer:{sender}",
             tags=["communication", "external-information", "incoming", sender],
-            metadata={"peer": sender, "context": context or {}},
+            metadata={"peer": sender, "context": context_payload},
         )
 
         prompt_message = (
