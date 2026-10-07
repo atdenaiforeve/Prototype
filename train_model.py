@@ -2,7 +2,8 @@
 
 The default behavior trains on 100% of every .txt file under data/training/.
 Validation is optional and must be explicitly enabled. A checkpoint is saved
-after every epoch, and the final checkpoint represents the full curriculum.
+after every epoch. If a checkpoint already exists, training resumes from the
+latest completed epoch by default.
 """
 
 from __future__ import annotations
@@ -144,12 +145,14 @@ def save_checkpoint(
     args: argparse.Namespace,
     history: list[dict[str, float]],
     *,
+    epoch: int,
     validation_loss: float | None = None,
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     torch.save(
         {
-            "format_version": 3,
+            "format_version": 4,
+            "epoch": epoch,
             "model_state_dict": model.state_dict(),
             "optimizer_state_dict": optimizer.state_dict(),
             "vocab_size": tokenizer.vocabulary_size,
@@ -171,6 +174,46 @@ def save_checkpoint(
         },
         path,
     )
+
+
+def load_checkpoint(
+    path: Path,
+    model: PrototypeLanguageModel,
+    optimizer: torch.optim.Optimizer,
+    tokenizer: Tokenizer,
+    args: argparse.Namespace,
+) -> tuple[int, list[dict[str, float]]]:
+    """Restore the latest checkpoint and return its completed epoch/history."""
+    checkpoint = torch.load(path, map_location="cpu", weights_only=False)
+
+    expected = {
+        "vocab_size": tokenizer.vocabulary_size,
+        "context_size": args.context_size,
+        "embedding_size": model.embedding_size,
+        "hidden_size": model.hidden_size,
+        "num_layers": model.num_layers,
+        "num_heads": model.num_heads,
+        "vocab_limit": args.vocab_limit,
+    }
+    for key, value in expected.items():
+        if checkpoint.get(key) != value:
+            raise ValueError(
+                f"checkpoint is incompatible for {key}: "
+                f"saved={checkpoint.get(key)!r}, current={value!r}"
+            )
+
+    model.load_state_dict(checkpoint["model_state_dict"])
+    optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+
+    history = checkpoint.get("history", [])
+    if not isinstance(history, list):
+        history = []
+
+    saved_epoch = checkpoint.get("epoch", len(history))
+    if not isinstance(saved_epoch, int) or saved_epoch < 0:
+        saved_epoch = len(history)
+
+    return saved_epoch, history
 
 
 def build_data(
@@ -206,7 +249,12 @@ def main() -> None:
     )
     parser.add_argument("--learning-rate", type=float, default=3e-4)
     parser.add_argument("--context-size", type=int, default=128)
-    parser.add_argument("--batch-size", type=int, default=16)
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=32,
+        help="samples per optimizer step; larger is usually faster if memory allows",
+    )
     parser.add_argument(
         "--validation-fraction",
         type=float,
@@ -218,6 +266,11 @@ def main() -> None:
         "--checkpoint",
         type=Path,
         default=Path("prototype_model.pt"),
+    )
+    parser.add_argument(
+        "--no-resume",
+        action="store_true",
+        help="ignore an existing checkpoint and start training from scratch",
     )
     args = parser.parse_args()
 
@@ -279,8 +332,26 @@ def main() -> None:
     )
 
     history: list[dict[str, float]] = []
+    start_epoch = 0
 
-    for epoch in range(1, args.epochs + 1):
+    if args.checkpoint.exists() and not args.no_resume:
+        print(f"loading checkpoint: {args.checkpoint}")
+        start_epoch, history = load_checkpoint(
+            args.checkpoint,
+            model,
+            optimizer,
+            tokenizer,
+            args,
+        )
+        print(f"resuming after epoch {start_epoch}")
+        if start_epoch >= args.epochs:
+            print(
+                f"checkpoint already reached epoch {start_epoch}; "
+                f"use --epochs {start_epoch + 1} or higher to continue"
+            )
+            return
+
+    for epoch in range(start_epoch + 1, args.epochs + 1):
         epoch_start = time.perf_counter()
 
         train_loss = run_epoch(
@@ -328,8 +399,7 @@ def main() -> None:
                 f"time {elapsed:.2f}s"
             )
 
-        # Every checkpoint is the latest trained state. There is no best-val
-        # selection when the goal is to fit the complete curriculum.
+        # Save the latest completed epoch so an interruption can be resumed.
         save_checkpoint(
             args.checkpoint,
             model,
@@ -338,6 +408,7 @@ def main() -> None:
             files,
             args,
             history,
+            epoch=epoch,
             validation_loss=validation_loss,
         )
 
