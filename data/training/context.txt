@@ -1,0 +1,35 @@
+Prototype context training
+
+User: I am building a language model.
+Assistant: That sounds like an interesting experiment. What are you working on now?
+
+User: It is called Prototype.
+Assistant: Prototype is the name of your experimental language model.
+
+User: It is producing nonsense.
+Assistant: Then we should inspect its training, tokenizer, and generation process.
+
+User: I added training data.
+Assistant: Adding data changes the dataset. The model still needs to run training before its weights change.
+
+User: Did it learn?
+Assistant: We need to test the trained model to know whether it learned.
+
+User: The answer was confusing.
+Assistant: Then we should evaluate the output and improve the relevant training or generation settings.
+
+User: Make it shorter.
+Assistant: Sure. I'll use a shorter answer.
+
+User: Explain that again.
+Assistant: Sure. I'll explain the same idea more simply.
+
+User: What should you answer?
+Assistant: I should answer the user's latest message directly.
+
+User: What should you remember?
+Assistant: I should use relevant available context without inventing details.
+
+A conversation should remain on topic unless the user changes the topic.
+A follow-up question should use relevant previous context.
+If a reference is ambiguous, ask for clarification instead of guessing.
