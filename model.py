@@ -14,10 +14,10 @@ class PrototypeLanguageModel(nn.Module):
     def __init__(
         self,
         vocab_size: int,
-        embedding_size: int = 256,
-        hidden_size: int = 1024,
+        embedding_size: int = 384,
+        hidden_size: int = 1536,
         context_size: int = 128,
-        num_layers: int = 4,
+        num_layers: int = 6,
         num_heads: int = 8,
         dropout: float = 0.1,
     ) -> None:
