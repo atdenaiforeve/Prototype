@@ -1,5 +1,5 @@
 {
   "name": "Prototype",
-  "forwardPorts": [8000],
-  "postStartCommand": "nohup python server_supervisor.py > prototype-supervisor.log 2>&1 &"
+  "forwardPorts": [8000, 8001],
+  "postStartCommand": "nohup python server_supervisor.py > prototype-supervisor.log 2>&1 & nohup python -m pip install -q -r requirements-mcp.txt && nohup python mcp_server.py > prototype-mcp.log 2>&1 &"
 }
