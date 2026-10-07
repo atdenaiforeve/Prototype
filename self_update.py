@@ -72,7 +72,11 @@ class GitHubSelfUpdater:
     def __init__(self, repository: str = "atdenaiforeve/Prototype", branch: str = "main", token: str | None = None) -> None:
         self.repository = repository
         self.branch = branch
-        self.token = token or os.environ.get("GITHUB_TOKEN")
+        # An explicitly supplied token is required. The environment fallback is
+        # only used when the caller omits the argument entirely.
+        if token is None:
+            token = os.environ.get("GITHUB_TOKEN")
+        self.token = token
         if not self.token:
             raise RuntimeError("GITHUB_TOKEN is required for autonomous GitHub updates.")
 
