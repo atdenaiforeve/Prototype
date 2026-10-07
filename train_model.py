@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import argparse
-import random
+import os
+import time
 from pathlib import Path
 
 import torch
@@ -11,6 +12,13 @@ from torch import nn
 
 from model import PrototypeLanguageModel
 from tokenizer import Tokenizer
+
+
+# Use the CPU capacity actually available to the Codespace. Keep inter-op
+# parallelism bounded so the two CPU cores are not oversubscribed.
+_cpu_count = max(1, os.cpu_count() or 1)
+torch.set_num_threads(_cpu_count)
+torch.set_num_interop_threads(max(1, min(2, _cpu_count)))
 
 
 def load_training_folder(data_dir: Path) -> tuple[str, list[Path]]:
@@ -81,9 +89,7 @@ def run_epoch(
 ) -> float:
     training = optimizer is not None
     model.train(training)
-    order = list(range(len(inputs)))
-    if training:
-        random.shuffle(order)
+    order = torch.randperm(len(inputs)) if training else torch.arange(len(inputs))
 
     if inputs.shape != targets.shape:
         raise ValueError("inputs and targets must have the same shape")
@@ -97,8 +103,8 @@ def run_epoch(
 
     for start in range(0, len(order), batch_size):
         batch_indices = order[start:start + batch_size]
-        x = inputs[batch_indices].to(device)
-        y = targets[batch_indices].to(device)
+        x = inputs.index_select(0, batch_indices).to(device)
+        y = targets.index_select(0, batch_indices).to(device)
 
         if training:
             optimizer.zero_grad(set_to_none=True)
@@ -129,7 +135,7 @@ def main() -> None:
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--learning-rate", type=float, default=3e-4)
     parser.add_argument("--context-size", type=int, default=128)
-    parser.add_argument("--batch-size", type=int, default=8)
+    parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--validation-fraction", type=float, default=0.1)
     parser.add_argument("--vocab-limit", type=int, default=8192)
     parser.add_argument("--checkpoint", type=Path, default=Path("prototype_model.pt"))
@@ -165,6 +171,7 @@ def main() -> None:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"vocabulary: {tokenizer.vocabulary_size}")
     print(f"tokens: {len(token_ids)} | device: {device}")
+    print(f"cpu threads: {torch.get_num_threads()} | inter-op threads: {torch.get_num_interop_threads()}")
 
     model = PrototypeLanguageModel(
         vocab_size=tokenizer.vocabulary_size,
@@ -181,6 +188,7 @@ def main() -> None:
     history: list[dict[str, float]] = []
 
     for epoch in range(1, args.epochs + 1):
+        epoch_start = time.perf_counter()
         train_loss = run_epoch(
             model, train_x, train_y, optimizer, args.batch_size, device
         )
@@ -190,9 +198,10 @@ def main() -> None:
             )
 
         history.append({"train_loss": train_loss, "validation_loss": val_loss})
+        elapsed = time.perf_counter() - epoch_start
         print(
             f"epoch {epoch:3d} | train loss {train_loss:.4f} | "
-            f"validation loss {val_loss:.4f}"
+            f"validation loss {val_loss:.4f} | time {elapsed:.2f}s"
         )
 
         if val_loss < best_val:
