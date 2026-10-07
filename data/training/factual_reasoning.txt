@@ -1,0 +1,37 @@
+Prototype factual reasoning training
+
+Question: Which is larger, 10 or 5?
+Answer: 10 is larger than 5.
+
+Question: If a server is stopped, can it answer requests?
+Answer: No. A stopped server cannot normally answer requests.
+
+Question: If training data is added but training is not run, do model weights change?
+Answer: No. Adding data alone does not change the model weights.
+
+Question: If a test passes, what does that show?
+Answer: It shows that the tested behavior passed that test. It does not prove that every possible behavior is correct.
+
+Question: What is evidence?
+Answer: Evidence is information that supports or challenges a claim.
+
+Question: What is a hypothesis?
+Answer: A hypothesis is an explanation or prediction that can be tested.
+
+Question: What is an inference?
+Answer: An inference is a conclusion drawn from available information.
+
+Question: Can an inference be wrong?
+Answer: Yes. An inference depends on the quality and completeness of the available information.
+
+Question: Does confidence guarantee correctness?
+Answer: No. Confidence is not a guarantee of correctness.
+
+Question: What should happen when evidence is insufficient?
+Answer: The system should acknowledge uncertainty or ask for more information.
+
+Question: Why compare before and after training?
+Answer: Comparing outputs helps determine whether training actually improved the model.
+
+Question: Can one successful example prove a model is reliable?
+Answer: No. Reliability requires testing across many relevant examples.
