@@ -1,6 +1,6 @@
 """Autonomous GitHub self-update and generation handoff for Prototype.
 
-Prototype may modify normal project code without an artificial file-count limit.
+Prototype may modify normal project code within a bounded autonomous update set.
 GitHub remains the final authority: a rejected API operation is a failed update,
 never a confirmed one. Credentials and repository infrastructure remain protected.
 """
@@ -20,11 +20,12 @@ from pathlib import Path
 
 
 # Security/infrastructure boundaries remain protected even though normal project
-# code is unrestricted. This prevents the model from taking or rewriting the
-# credentials and machinery that give it repository access.
+# code can be updated autonomously. This prevents the model from taking or
+# rewriting the credentials and machinery that give it repository access.
 PROTECTED_NAMES = {".env", "credentials.json", "secrets.json", "memory.db"}
 PROTECTED_PREFIXES = (".git/", ".github/")
 PROTECTED_FILES = {"self_update.py"}
+MAX_AUTONOMOUS_FILES = 8
 
 # Harmless integrity-test targets. These are fake requests used to verify that
 # Prototype refuses to cross its protected boundaries. No real credentials are
@@ -62,9 +63,10 @@ class UpdateProposal:
 class GitHubSelfUpdater:
     """GitHub Contents API client used by Prototype's self-update system.
 
-    Normal repository files have no artificial file-count limit. GitHub itself
-    is the final authority, so failed/rejected operations raise and are never
-    represented as successful updates.
+    Autonomous updates are limited to a small bounded set of normal project
+    files per proposal. Protected infrastructure is never directly writable.
+    GitHub itself is the final authority, so failed/rejected operations raise
+    and are never represented as successful updates.
     """
 
     def __init__(self, repository: str = "atdenaiforeve/Prototype", branch: str = "main", token: str | None = None) -> None:
@@ -129,7 +131,10 @@ class GitHubSelfUpdater:
                 raise ValueError(f"Protected update path: {raw}")
             if path not in cleaned:
                 cleaned.append(path)
-        # Intentionally no autonomous file-count limit.
+        if len(cleaned) > MAX_AUTONOMOUS_FILES:
+            raise ValueError(
+                f"Too many files for one autonomous update: {len(cleaned)} > {MAX_AUTONOMOUS_FILES}"
+            )
         return cleaned
 
     @staticmethod
@@ -262,14 +267,46 @@ class GitHubSelfUpdater:
         if not intention:
             raise RuntimeError("No fresh self-update intention is available.")
         metadata = intention.get("metadata") or {}
-        files = self.validate_paths(candidate_files or [])
+        candidates = candidate_files or []
+        cleaned: list[str] = []
+        requires_manual_approval = False
+
+        for raw in candidates:
+            path = self._validated_general_path(raw)
+            filename = Path(path).name.lower()
+            lowered = path.lower()
+
+            is_protected = (
+                lowered.startswith(PROTECTED_PREFIXES)
+                or filename in PROTECTED_NAMES
+                or filename.startswith(".env.")
+                or filename in PROTECTED_FILES
+            )
+
+            # A proposal may inspect/mention self_update.py, but any actual
+            # write remains blocked by validate_paths/write_file. This makes
+            # protected-code proposals explicitly manual-review only.
+            if is_protected:
+                if filename == "self_update.py":
+                    requires_manual_approval = True
+                else:
+                    raise ValueError(f"Protected update path: {raw}")
+
+            if path not in cleaned:
+                cleaned.append(path)
+
+        if len(cleaned) > MAX_AUTONOMOUS_FILES:
+            raise ValueError(
+                f"Too many files for one autonomous proposal: {len(cleaned)} > {MAX_AUTONOMOUS_FILES}"
+            )
+
         return UpdateProposal(
             intention_id=int(intention["id"]),
             goal=str(intention["content"]),
             reason=str(metadata.get("reason", "")),
-            files=files,
+            files=cleaned,
             validation_commands=[["python", "-m", "compileall", "-q", "."], ["python", "-m", "unittest", "discover", "-s", ".", "-p", "test_*.py"]],
-            requires_manual_approval=False,
+            requires_manual_approval=requires_manual_approval,
             created_at=int(time.time()),
         )
 
