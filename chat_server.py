@@ -275,7 +275,9 @@ def _read_generation() -> int:
         return int(data.get("generation", 0))
     except (OSError, ValueError, TypeError, json.JSONDecodeError):
         return 0
-\n\ndef make_handler(chat: PrototypeChat):
+
+
+def make_handler(chat: PrototypeChat):
     class Handler(BaseHTTPRequestHandler):
         server_version = "PrototypeChat/1.0"
 
@@ -315,7 +317,12 @@ def _read_generation() -> int:
                 self._send_json(200, chat.status())
                 return
             if parsed.path == "/health":
-                self._send_json(200, {\n                    "status": "ok",\n                    "model_loaded": chat.model is not None and chat.tokenizer is not None,\n                    "generation": _read_generation(),\n                    "autonomous_conversations": len(chat.autonomous_started),\n                })
+                self._send_json(200, {
+                    "status": "ok",
+                    "model_loaded": chat.model is not None and chat.tokenizer is not None,
+                    "generation": _read_generation(),
+                    "autonomous_conversations": len(chat.autonomous_started),
+                })
                 return
             if parsed.path == "/":
                 self._send_json(200, {
