@@ -252,8 +252,8 @@ def main() -> None:
     parser.add_argument(
         "--batch-size",
         type=int,
-        default=32,
-        help="samples per optimizer step; larger is usually faster if memory allows",
+        default=16,
+        help="samples per optimizer step; 16 is a safer default for the larger model",
     )
     parser.add_argument(
         "--validation-fraction",
@@ -310,6 +310,8 @@ def main() -> None:
     )
 
     print(f"vocabulary: {tokenizer.vocabulary_size}")
+    parameter_count = sum(parameter.numel() for parameter in model.parameters())
+    print(f"model parameters: {parameter_count:,}")
     print(f"tokens: {len(token_ids)} | device: {device}")
     print(
         f"training tokens: {train_y.numel()} | "
