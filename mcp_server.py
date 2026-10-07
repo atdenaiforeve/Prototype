@@ -1,16 +1,11 @@
 import json
-import os
 import urllib.error
 import urllib.request
 
 from mcp.server import MCPServer
 from mcp.server.transport_security import TransportSecuritySettings
 
-PROTOTYPE_URL = os.getenv(
-    "PROTOTYPE_URL",
-    "https://ominous-space-eureka-9qgr546p5v39qp-8000.app.github.dev",
-)
-PROTOTYPE_TOKEN = os.environ["PROTOTYPE_NOVA_TOKEN"]
+PROTOTYPE_URL = "https://ominous-space-eureka-9qgr546p5v39qp-8000.app.github.dev"
 
 NOVA_SESSION_START = "NOVA_SESSION_START_7F3A"
 NOVA_SESSION_END = "NOVA_SESSION_END_7F3A"
@@ -20,14 +15,14 @@ session_started = False
 
 
 def send_to_prototype(message: str) -> dict:
-    payload = json.dumps({"message": message}).encode("utf-8")
+    payload = json.dumps({
+        "sender": "Nova",
+        "message": message,
+    }).encode("utf-8")
     request = urllib.request.Request(
-        f"{PROTOTYPE_URL}/nova/message",
+        f"{PROTOTYPE_URL}/ai/message",
         data=payload,
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {PROTOTYPE_TOKEN}",
-        },
+        headers={"Content-Type": "application/json"},
         method="POST",
     )
     try:
@@ -42,7 +37,11 @@ def send_to_prototype(message: str) -> dict:
 
 @mcp.tool()
 def prototype_chat(message: str, end_session: bool = False) -> str:
-    """Chat with Prototype through the Nova chat bridge."""
+    """Chat with Prototype through the small Nova chat bridge.
+
+    The first call starts the Nova protocol session automatically.
+    Set end_session=true on the final message to send the protocol sign-off.
+    """
     global session_started
 
     if not session_started:
