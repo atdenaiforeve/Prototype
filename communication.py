@@ -74,10 +74,24 @@ class AICommunication:
         if len(message) > 8_000:
             raise ValueError("message is too long")
 
+        context_payload = context or {}
+        if not isinstance(context_payload, dict):
+            raise ValueError("context must be a JSON object")
+        try:
+            encoded_context = json.dumps(
+                context_payload,
+                ensure_ascii=False,
+                separators=(",", ":"),
+            )
+        except (TypeError, ValueError) as exc:
+            raise ValueError("context must contain JSON-compatible values") from exc
+        if len(encoded_context) > 4_000:
+            raise ValueError("context is too large")
+
         payload = {
             "sender": "Prototype",
             "message": message,
-            "context": context or {},
+            "context": context_payload,
         }
         encoded = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         request = urllib.request.Request(
