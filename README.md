@@ -18,6 +18,40 @@ Install the Python dependency set before training or running the neural model:
 python -m pip install -r requirements.txt
 ```
 
+## Train Prototype on its curriculum
+
+All UTF-8 `.txt` files below `data/training/` are loaded automatically.
+
+The default trainer now uses **100% of the discovered training corpus**. It does not hold out part of the curriculum unless a validation fraction is explicitly requested. This means the final saved checkpoint is trained directly on every current training file.
+
+Run:
+
+```bash
+python train.py
+```
+
+This is the same neural Transformer trainer as `python train_model.py`.
+
+Useful options:
+
+```bash
+python train.py --epochs 20
+python train.py --epochs 40 --batch-size 16
+python train.py --validation-fraction 0.1
+```
+
+Do not expect a low training loss to prove understanding. It proves that the model learned to assign probability to the token sequences in the supplied corpus. The project includes a separate verification command for that evidence.
+
+## Verify the saved model against the complete curriculum
+
+After training:
+
+```bash
+python verify_training.py
+```
+
+The verifier loads the saved checkpoint, reloads every current training `.txt` file, evaluates the model on the full corpus, and reports training loss and perplexity. It also checks whether the checkpoint records all current training files.
+
 ## Run the chat
 
 After training a model and creating `prototype_model.pt` and `vocabulary.json`:
@@ -108,7 +142,7 @@ Incoming messages are stored as external information in Prototype's memory. Prot
 
 ### Connecting a real remote AI
 
-For automatic live updates in Codespaces, start `python server_supervisor.py` instead of `python chat_server.py`. The supervisor checks GitHub every 2 seconds, pulls new commits with a fast-forward-only update, and restarts the Prototype server so code changes go live automatically. It never force-resets local work. If the checkout has uncommitted changes, it safely skips the update. The server binds to `0.0.0.0` by default. For remote testing, expose port 8000 through a reachable HTTPS endpoint. Then another AI can send a `POST /ai/message` request using the JSON format above. **No shared inbound key is currently required.**
+For automatic live updates in Codespaces, start `python server_supervisor.py` instead of `python chat_server.py`. The supervisor checks GitHub every 2 seconds, pulls new commits with a fast-forward-only update, and restarts the Prototype server so code changes go live. It never force-resets local work. If the checkout has uncommitted changes, it safely skips the update. The server binds to `0.0.0.0` by default. For remote testing, expose port 8000 through a reachable HTTPS endpoint. Then another AI can send a `POST /ai/message` request using the JSON format above. **No shared inbound key is currently required.**
 
 Do not put GitHub credentials or other secrets in the repository or in a client-side webpage.
 
