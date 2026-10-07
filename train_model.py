@@ -9,6 +9,8 @@ latest completed epoch by default.
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
 import os
 import time
 from pathlib import Path
@@ -39,6 +41,47 @@ def load_training_folder(data_dir: Path) -> tuple[str, list[Path]]:
     if not text:
         raise ValueError(f"training files in {data_dir} are empty")
     return text, files
+
+
+
+def token_cache_fingerprint(text: str, tokenizer: Tokenizer) -> str:
+    """Return a stable key for the exact text + tokenizer state."""
+    payload = {
+        "text": text,
+        "token_to_id": tokenizer.token_to_id,
+        "merges": tokenizer.merges,
+    }
+    encoded = json.dumps(payload, sort_keys=True, ensure_ascii=False).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def load_or_build_token_ids(
+    text: str,
+    tokenizer: Tokenizer,
+    cache_path: Path,
+) -> list[int]:
+    """Reuse token IDs when the training text and tokenizer are unchanged."""
+    fingerprint = token_cache_fingerprint(text, tokenizer)
+
+    if cache_path.exists():
+        try:
+            data = json.loads(cache_path.read_text(encoding="utf-8"))
+            if data.get("fingerprint") == fingerprint:
+                token_ids = data.get("token_ids")
+                if isinstance(token_ids, list) and token_ids:
+                    print(f"token cache: loaded {len(token_ids)} tokens from {cache_path}")
+                    return [int(token_id) for token_id in token_ids]
+        except (OSError, ValueError, TypeError, json.JSONDecodeError):
+            pass
+
+    token_ids = load_or_build_token_ids(text, tokenizer, args.token_cache)
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    cache_path.write_text(
+        json.dumps({"version": 1, "fingerprint": fingerprint, "token_ids": token_ids}),
+        encoding="utf-8",
+    )
+    print(f"token cache: built {len(token_ids)} tokens at {cache_path}")
+    return token_ids
 
 
 def make_windows(
@@ -199,7 +242,8 @@ def load_checkpoint(
         if checkpoint.get(key) != value:
             raise ValueError(
                 f"checkpoint is incompatible for {key}: "
-                f"saved={checkpoint.get(key)!r}, current={value!r}"
+                f"saved={checkpoint.get(key)!r}, current={value!r}. "
+                "Use a new checkpoint path or --no-resume for a new model architecture."
             )
 
     model.load_state_dict(checkpoint["model_state_dict"])
@@ -247,8 +291,8 @@ def main() -> None:
     parser.add_argument(
         "--batch-size",
         type=int,
-        default=16,
-        help="samples per optimizer step; 16 is a safer default for the larger model",
+        default=32,
+        help="samples per optimizer step; 32 improves CPU throughput when RAM allows",
     )
     parser.add_argument(
         "--validation-fraction",
