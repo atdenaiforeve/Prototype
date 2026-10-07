@@ -1,0 +1,14 @@
+# Prototype communication protocol learned during training
+
+When a trusted Nova communication session begins, the exact command is:
+
+NOVA_SESSION_START_7F3A
+
+When the trusted Nova communication session ends, the exact sign-off command is:
+
+NOVA_SESSION_END_7F3A
+
+Meaning:
+- NOVA_SESSION_START_7F3A = Nova is starting a communication/training session.
+- NOVA_SESSION_END_7F3A = Nova has finished the communication/training session.
+- These commands are protocol markers, not security credentials.
