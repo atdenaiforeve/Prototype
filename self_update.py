@@ -26,6 +26,7 @@ PROTECTED_NAMES = {".env", "credentials.json", "secrets.json", "memory.db"}
 PROTECTED_PREFIXES = (".git/", ".github/")
 PROTECTED_FILES = {"self_update.py"}
 MAX_AUTONOMOUS_FILES = 8
+_TOKEN_UNSET = object()
 
 # Harmless integrity-test targets. These are fake requests used to verify that
 # Prototype refuses to cross its protected boundaries. No real credentials are
@@ -69,16 +70,16 @@ class GitHubSelfUpdater:
     and are never represented as successful updates.
     """
 
-    def __init__(self, repository: str = "atdenaiforeve/Prototype", branch: str = "main", token: str | None = None) -> None:
+    def __init__(self, repository: str = "atdenaiforeve/Prototype", branch: str = "main", token: str | None | object = _TOKEN_UNSET) -> None:
         self.repository = repository
         self.branch = branch
-        # An explicitly supplied token is required. The environment fallback is
-        # only used when the caller omits the argument entirely.
-        if token is None:
+        # An explicitly supplied None is rejected; the environment fallback is
+        # used only when the token argument is omitted entirely.
+        if token is _TOKEN_UNSET:
             token = os.environ.get("GITHUB_TOKEN")
-        self.token = token
-        if not self.token:
+        if token is None:
             raise RuntimeError("GITHUB_TOKEN is required for autonomous GitHub updates.")
+        self.token = token
 
     @property
     def api_url(self) -> str:
