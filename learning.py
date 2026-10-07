@@ -98,4 +98,3 @@ class LearningLoop:
 
     def retrieve(self, prompt: str, limit: int = 5) -> list[dict[str, Any]]:
         return self.memory.recall(prompt, limit=limit)
-"
