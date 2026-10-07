@@ -6,6 +6,7 @@ frequent character-pair merges from the training corpus.
 
 from __future__ import annotations
 
+import heapq
 import json
 import re
 from collections import Counter
@@ -100,7 +101,14 @@ class Tokenizer:
         return tuple(output)
 
     def learn(self, text: str) -> list[str]:
-        """Rebuild the subword vocabulary from the supplied training text."""
+        """Rebuild the vocabulary using heap/indexed BPE pair updates.
+
+        The old implementation recomputed every pair in the whole corpus after
+        every merge. That is simple but becomes very slow as the vocabulary
+        grows. This implementation keeps a max-heap of candidate pairs and an
+        index of the sequences containing each pair, so only sequences affected
+        by the selected merge are updated.
+        """
         if not isinstance(text, str):
             raise TypeError("text must be a string")
         if not text.strip():
@@ -118,36 +126,117 @@ class Tokenizer:
         for symbol in symbols:
             self._add_token(symbol)
 
+        # Weighted pair counts avoid rescanning the entire corpus to find the
+        # most frequent merge. The heap uses lazy deletion: stale entries are
+        # ignored when their stored count no longer matches pair_counts.
+        pair_counts: Counter[tuple[str, str]] = Counter()
+        pair_to_sequences: dict[
+            tuple[str, str],
+            set[tuple[str, ...]],
+        ] = {}
+
+        for sequence, count in sequences.items():
+            for pair in zip(sequence, sequence[1:]):
+                pair_counts[pair] += count
+                pair_to_sequences.setdefault(pair, set()).add(sequence)
+
+        merge_heap = [
+            (-count, pair)
+            for pair, count in pair_counts.items()
+        ]
+        heapq.heapify(merge_heap)
+
         while len(self.token_to_id) < self.vocab_limit:
-            pairs = self._pair_counts(sequences)
-            candidates = [
-                (count, pair)
-                for pair, count in pairs.items()
-                if count >= self.min_frequency
-            ]
-            if not candidates:
+            pair: tuple[str, str] | None = None
+
+            while merge_heap:
+                negative_count, candidate = heapq.heappop(merge_heap)
+                count = -negative_count
+
+                if (
+                    pair_counts.get(candidate, 0) == count
+                    and count >= self.min_frequency
+                ):
+                    pair = candidate
+                    break
+
+            if pair is None:
                 break
 
-            _, pair = max(
-                candidates,
-                key=lambda item: (item[0], item[1]),
-            )
             merged = pair[0] + pair[1]
-
             if not self._add_token(merged):
                 break
 
+            affected_sequences = list(
+                pair_to_sequences.get(pair, ())
+            )
+            if not affected_sequences:
+                break
+
+            for old_sequence in affected_sequences:
+                count = sequences.pop(old_sequence, 0)
+                if not count:
+                    continue
+
+                # Remove the old sequence's contribution from the global
+                # pair counts and occurrence index.
+                old_pairs = Counter(
+                    zip(old_sequence, old_sequence[1:])
+                )
+                for old_pair, occurrences in old_pairs.items():
+                    new_count = (
+                        pair_counts.get(old_pair, 0)
+                        - occurrences * count
+                    )
+
+                    sequence_index = pair_to_sequences.get(old_pair)
+                    if sequence_index is not None:
+                        sequence_index.discard(old_sequence)
+                        if not sequence_index:
+                            pair_to_sequences.pop(old_pair, None)
+
+                    if new_count > 0:
+                        pair_counts[old_pair] = new_count
+                        heapq.heappush(
+                            merge_heap,
+                            (-new_count, old_pair),
+                        )
+                    else:
+                        pair_counts.pop(old_pair, None)
+
+                new_sequence = self._merge_sequence(
+                    old_sequence,
+                    pair,
+                    merged,
+                )
+                sequences[new_sequence] += count
+
+                # Add only the pairs created by the changed sequence.
+                new_pairs = Counter(
+                    zip(new_sequence, new_sequence[1:])
+                )
+                for new_pair, occurrences in new_pairs.items():
+                    new_count = (
+                        pair_counts.get(new_pair, 0)
+                        + occurrences * count
+                    )
+                    pair_counts[new_pair] = new_count
+                    pair_to_sequences.setdefault(
+                        new_pair,
+                        set(),
+                    ).add(new_sequence)
+                    heapq.heappush(
+                        merge_heap,
+                        (-new_count, new_pair),
+                    )
+
             self.merges.append(pair)
 
-            # Preserve counts when multiple distinct sequences collapse into
-            # the same merged sequence. The old dictionary-comprehension
-            # implementation silently overwrote duplicates here.
-            merged_sequences: Counter[tuple[str, ...]] = Counter()
-            for word, count in sequences.items():
-                merged_sequences[
-                    self._merge_sequence(word, pair, merged)
-                ] += count
-            sequences = merged_sequences
+            if len(self.merges) % 500 == 0:
+                print(
+                    f"tokenizer merges: {len(self.merges)} "
+                    f"| vocabulary: {self.vocabulary_size}"
+                )
 
         self.frequencies.update(
             TOKEN_PATTERN.findall(text.lower())
@@ -267,7 +356,7 @@ class Tokenizer:
 
     def save(self) -> None:
         data = {
-            "version": 4,
+            "version": 5,
             "vocab_limit": self.vocab_limit,
             "min_frequency": self.min_frequency,
             "token_to_id": self.token_to_id,
