@@ -209,12 +209,7 @@ def load_checkpoint(
     if not isinstance(history, list):
         history = []
 
-    saved_epoch = checkpoint.get("epoch", len(history))
-    if not isinstance(saved_epoch, int) or saved_epoch < 0:
-        saved_epoch = len(history)
-
-    return saved_epoch, history
-
+    # Older format-3 checkpoints did not store the epoch number.\n    # Their history contains one entry per completed epoch, so recover it safely.\n    saved_epoch = checkpoint.get("epoch")\n    if not isinstance(saved_epoch, int) or saved_epoch < 0:\n        saved_epoch = len(history)\n        if checkpoint.get("format_version") == 3:\n            print(\n                f"legacy checkpoint detected: recovering completed epoch {saved_epoch} " \n                "from training history"\n            )\n\n    return saved_epoch, history\n
 
 def build_data(
     token_ids: list[int],
