@@ -10,7 +10,9 @@ from other devices. No GitHub credentials are exposed to clients.
 from __future__ import annotations
 
 import argparse
+import hmac
 import json
+import os
 import threading
 import time
 import uuid
@@ -31,6 +33,7 @@ DEFAULT_CHECKPOINT = ROOT / "prototype_model.pt"
 DEFAULT_TOKENIZER = ROOT / "vocabulary.json"
 AI_PEER_COOLDOWN_SECONDS = 10.0
 MAX_AI_CONTEXT_CHARS = 4_000
+NOVA_BRIDGE_TOKEN_ENV = "PROTOTYPE_NOVA_TOKEN"
 
 
 class PrototypeChat:
@@ -201,6 +204,20 @@ class PrototypeChat:
             except Exception as exc:
                 print(f"[Prototype] autonomous message failed: {exc}")
 
+    def receive_nova_message(
+        self,
+        message: str,
+        conversation_id: str | None = None,
+        context: dict | None = None,
+    ) -> dict:
+        """Receive a message from the authenticated Nova bridge."""
+        return self.receive_ai_message(
+            sender="Nova",
+            message=message,
+            conversation_id=conversation_id,
+            context=context,
+        )
+
     def status(self) -> dict:
         """Return one server-side snapshot of Prototype's major systems."""
         from self_update import GitHubSelfUpdater
@@ -358,6 +375,7 @@ def make_handler(chat: PrototypeChat):
                         "autonomous_messages": "GET /autonomous/messages?conversation_id=...",
                         "experience": "GET /experience/status + POST /experience/think-step",
                         "ai_communication": "POST /ai/message + POST /communicate",
+                        "nova_bridge": "POST /nova/message (Bearer token required)",
                         "self_model": "GET /status",
                         "self_update": "GET /self-update/status + POST /self-update/intention",
                     },
@@ -390,6 +408,24 @@ def make_handler(chat: PrototypeChat):
                 return
             self._send_json(404, {"error": "not found"})
 
+        def _authorize_nova_bridge(self) -> bool:
+            """Authorize the private Nova bridge using a server-side secret."""
+            expected = os.environ.get(NOVA_BRIDGE_TOKEN_ENV, "").strip()
+            if not expected:
+                self._send_json(503, {"error": "Nova bridge is not configured"})
+                return False
+
+            authorization = self.headers.get("Authorization", "")
+            if not authorization.startswith("Bearer "):
+                self._send_json(401, {"error": "Nova bridge authentication required"})
+                return False
+
+            supplied = authorization[7:].strip()
+            if not supplied or not hmac.compare_digest(supplied, expected):
+                self._send_json(401, {"error": "invalid Nova bridge credentials"})
+                return False
+            return True
+
         def do_POST(self) -> None:
             parsed = urlparse(self.path)
             allowed = {
@@ -398,6 +434,7 @@ def make_handler(chat: PrototypeChat):
                 "/experience/think-step",
                 "/communicate",
                 "/ai/message",
+                "/nova/message",
                 "/self-update/intention",
                 "/self-update/freeze",
                 "/self-update/unfreeze",
@@ -448,6 +485,23 @@ def make_handler(chat: PrototypeChat):
                     )
                     self._send_json(200, {
                         "sender": "Prototype",
+                        "reply": result["reply"],
+                        "conversation_id": result["conversation_id"],
+                        "workspace": result["workspace"],
+                    })
+                    return
+
+                if parsed.path == "/nova/message":
+                    if not self._authorize_nova_bridge():
+                        return
+                    result = chat.receive_nova_message(
+                        body.get("message", ""),
+                        body.get("conversation_id"),
+                        body.get("context"),
+                    )
+                    self._send_json(200, {
+                        "sender": "Prototype",
+                        "bridge": "Nova",
                         "reply": result["reply"],
                         "conversation_id": result["conversation_id"],
                         "workspace": result["workspace"],
