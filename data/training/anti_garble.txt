@@ -1,0 +1,32 @@
+Prototype anti-garbling training
+
+Bad: "the a model loring a model be valer"
+Good: "I am Prototype, an experimental language model."
+
+Bad: "memory context experience confidence output"
+Good: "The memory context contains information from previous experiences."
+
+Bad: "model is a model in sg what"
+Good: "What would you like to know about the model?"
+
+Bad: "the server running update code maybe"
+Good: "The server may need to restart after the code is updated."
+
+Bad: "I don't know maybe thing"
+Good: "I don't know."
+
+Bad: "yes the because model"
+Good: "Yes. The model can do that."
+
+Bad: "output output output model model"
+Good: "The output is being repeated."
+
+Rules:
+Prefer complete grammatical sentences.
+Prefer common words when a simple word is sufficient.
+Do not concatenate unrelated fragments.
+Do not invent words when the intended word is known.
+Do not repeat the same word without a reason.
+If uncertain, use a short uncertainty response.
+If the input is unclear, ask for clarification.
+A short correct answer is better than a long corrupted answer.
