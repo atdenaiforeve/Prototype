@@ -1,4 +1,9 @@
-"""Train Prototype's causal Transformer on the complete training curriculum."""
+"""Train Prototype's causal Transformer on the complete training curriculum.
+
+The default behavior trains on 100% of every .txt file under data/training/.
+Validation is optional and must be explicitly enabled. A checkpoint is saved
+after every epoch, and the final checkpoint represents the full curriculum.
+"""
 
 from __future__ import annotations
 
@@ -14,15 +19,13 @@ from model import PrototypeLanguageModel
 from tokenizer import Tokenizer
 
 
-# Use the CPU capacity actually available to the Codespace. Keep inter-op
-# parallelism bounded so the two CPU cores are not oversubscribed.
 _cpu_count = max(1, os.cpu_count() or 1)
 torch.set_num_threads(_cpu_count)
 torch.set_num_interop_threads(max(1, min(2, _cpu_count)))
 
 
 def load_training_folder(data_dir: Path) -> tuple[str, list[Path]]:
-    """Load every UTF-8 .txt file below data_dir, in stable path order."""
+    """Load every UTF-8 .txt file below data_dir in stable path order."""
     if not data_dir.exists():
         raise FileNotFoundError(f"training directory does not exist: {data_dir}")
 
@@ -42,7 +45,7 @@ def make_windows(
     context_size: int,
     stride: int = 1,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Create sequence inputs and next-token targets efficiently."""
+    """Create next-token training windows."""
     if context_size < 1:
         raise ValueError("context_size must be positive")
     if stride < 1:
@@ -61,7 +64,7 @@ def split_token_ids(
     context_size: int,
     validation_fraction: float = 0.1,
 ) -> tuple[list[int], list[int]]:
-    """Split raw tokens before windowing so validation text is truly unseen."""
+    """Split raw tokens before windowing for optional unseen validation."""
     if context_size < 1:
         raise ValueError("context_size must be positive")
     if not 0 < validation_fraction < 1:
@@ -89,7 +92,12 @@ def run_epoch(
 ) -> float:
     training = optimizer is not None
     model.train(training)
-    order = torch.randperm(len(inputs)) if training else torch.arange(len(inputs))
+
+    order = (
+        torch.randperm(len(inputs))
+        if training
+        else torch.arange(len(inputs))
+    )
 
     if inputs.shape != targets.shape:
         raise ValueError("inputs and targets must have the same shape")
@@ -127,18 +135,90 @@ def run_epoch(
     return total_loss / max(1, total_tokens)
 
 
+def save_checkpoint(
+    path: Path,
+    model: PrototypeLanguageModel,
+    optimizer: torch.optim.Optimizer,
+    tokenizer: Tokenizer,
+    files: list[Path],
+    args: argparse.Namespace,
+    history: list[dict[str, float]],
+    *,
+    validation_loss: float | None = None,
+) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    torch.save(
+        {
+            "format_version": 3,
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            "vocab_size": tokenizer.vocabulary_size,
+            "context_size": args.context_size,
+            "embedding_size": model.embedding_size,
+            "hidden_size": model.hidden_size,
+            "num_layers": model.num_layers,
+            "num_heads": model.num_heads,
+            "dropout": model.dropout,
+            "vocab_limit": args.vocab_limit,
+            "training_files": [str(path) for path in files],
+            "training_file_count": len(files),
+            "training_fraction": (
+                1.0 if args.validation_fraction == 0.0
+                else 1.0 - args.validation_fraction
+            ),
+            "validation_loss": validation_loss,
+            "history": history,
+        },
+        path,
+    )
+
+
+def build_data(
+    token_ids: list[int],
+    context_size: int,
+    validation_fraction: float,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor | None, torch.Tensor | None]:
+    """Build training data and optional validation data."""
+    if validation_fraction == 0.0:
+        train_x, train_y = make_windows(token_ids, context_size)
+        return train_x, train_y, None, None
+
+    train_tokens, val_tokens = split_token_ids(
+        token_ids,
+        context_size,
+        validation_fraction,
+    )
+    train_x, train_y = make_windows(train_tokens, context_size)
+    val_x, val_y = make_windows(val_tokens, context_size)
+    return train_x, train_y, val_x, val_y
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Train Prototype from every .txt file in data/training/."
+        description="Train Prototype on every .txt file in data/training/."
     )
     parser.add_argument("--data-dir", type=Path, default=Path("data/training"))
-    parser.add_argument("--epochs", type=int, default=10)
+    parser.add_argument(
+        "--epochs",
+        type=int,
+        default=20,
+        help="complete passes over the training curriculum",
+    )
     parser.add_argument("--learning-rate", type=float, default=3e-4)
     parser.add_argument("--context-size", type=int, default=128)
     parser.add_argument("--batch-size", type=int, default=16)
-    parser.add_argument("--validation-fraction", type=float, default=0.1)
+    parser.add_argument(
+        "--validation-fraction",
+        type=float,
+        default=0.0,
+        help="0 trains on 100%% of the text; set >0 only for held-out validation",
+    )
     parser.add_argument("--vocab-limit", type=int, default=8192)
-    parser.add_argument("--checkpoint", type=Path, default=Path("prototype_model.pt"))
+    parser.add_argument(
+        "--checkpoint",
+        type=Path,
+        default=Path("prototype_model.pt"),
+    )
     args = parser.parse_args()
 
     if args.context_size < 8:
@@ -149,29 +229,43 @@ def main() -> None:
         raise ValueError("epochs must be positive")
     if args.learning_rate <= 0:
         raise ValueError("learning-rate must be positive")
+    if not 0.0 <= args.validation_fraction < 1.0:
+        raise ValueError("validation-fraction must be between 0 and 1")
 
     text, files = load_training_folder(args.data_dir)
+
     print(f"loaded {len(files)} training file(s):")
     for path in files:
         print(f"  - {path}")
 
-    tokenizer = Tokenizer(vocab_limit=args.vocab_limit)
+    tokenizer = Tokenizer(
+        model_path="vocabulary.json",
+        vocab_limit=args.vocab_limit,
+    )
     tokenizer.learn(text)
     tokenizer.save()
 
     token_ids = tokenizer.encode(text, add_boundaries=True)
-    train_tokens, val_tokens = split_token_ids(
+    train_x, train_y, val_x, val_y = build_data(
         token_ids,
         args.context_size,
         args.validation_fraction,
     )
-    train_x, train_y = make_windows(train_tokens, args.context_size)
-    val_x, val_y = make_windows(val_tokens, args.context_size)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device(
+        "cuda" if torch.cuda.is_available() else "cpu"
+    )
+
     print(f"vocabulary: {tokenizer.vocabulary_size}")
     print(f"tokens: {len(token_ids)} | device: {device}")
-    print(f"cpu threads: {torch.get_num_threads()} | inter-op threads: {torch.get_num_interop_threads()}")
+    print(
+        f"training tokens: {train_y.numel()} | "
+        f"validation: {0 if val_y is None else val_y.numel()}"
+    )
+    print(
+        f"cpu threads: {torch.get_num_threads()} | "
+        f"inter-op threads: {torch.get_num_interop_threads()}"
+    )
 
     model = PrototypeLanguageModel(
         vocab_size=tokenizer.vocabulary_size,
@@ -184,51 +278,76 @@ def main() -> None:
         weight_decay=0.01,
     )
 
-    best_val = float("inf")
     history: list[dict[str, float]] = []
 
     for epoch in range(1, args.epochs + 1):
         epoch_start = time.perf_counter()
+
         train_loss = run_epoch(
-            model, train_x, train_y, optimizer, args.batch_size, device
+            model,
+            train_x,
+            train_y,
+            optimizer,
+            args.batch_size,
+            device,
         )
-        with torch.no_grad():
-            val_loss = run_epoch(
-                model, val_x, val_y, None, args.batch_size, device
-            )
 
-        history.append({"train_loss": train_loss, "validation_loss": val_loss})
+        validation_loss = None
+
+        if val_x is not None and val_y is not None:
+            with torch.no_grad():
+                validation_loss = run_epoch(
+                    model,
+                    val_x,
+                    val_y,
+                    None,
+                    args.batch_size,
+                    device,
+                )
+
+        row: dict[str, float] = {
+            "train_loss": train_loss,
+        }
+
+        if validation_loss is not None:
+            row["validation_loss"] = validation_loss
+
+        history.append(row)
+
         elapsed = time.perf_counter() - epoch_start
-        print(
-            f"epoch {epoch:3d} | train loss {train_loss:.4f} | "
-            f"validation loss {val_loss:.4f} | time {elapsed:.2f}s"
-        )
 
-        if val_loss < best_val:
-            best_val = val_loss
-            args.checkpoint.parent.mkdir(parents=True, exist_ok=True)
-            torch.save(
-                {
-                    "format_version": 2,
-                    "model_state_dict": model.state_dict(),
-                    "optimizer_state_dict": optimizer.state_dict(),
-                    "vocab_size": tokenizer.vocabulary_size,
-                    "context_size": args.context_size,
-                    "embedding_size": model.embedding_size,
-                    "hidden_size": model.hidden_size,
-                    "num_layers": model.num_layers,
-                    "num_heads": model.num_heads,
-                    "dropout": model.dropout,
-                    "vocab_limit": args.vocab_limit,
-                    "best_validation_loss": best_val,
-                    "training_files": [str(path) for path in files],
-                    "history": history,
-                },
-                args.checkpoint,
+        if validation_loss is None:
+            print(
+                f"epoch {epoch:3d} | train loss {train_loss:.4f} | "
+                f"time {elapsed:.2f}s"
+            )
+        else:
+            print(
+                f"epoch {epoch:3d} | train loss {train_loss:.4f} | "
+                f"validation loss {validation_loss:.4f} | "
+                f"time {elapsed:.2f}s"
             )
 
-    print(f"best validation loss: {best_val:.4f}")
-    print(f"saved checkpoint to {args.checkpoint}")
+        # Every checkpoint is the latest trained state. There is no best-val
+        # selection when the goal is to fit the complete curriculum.
+        save_checkpoint(
+            args.checkpoint,
+            model,
+            optimizer,
+            tokenizer,
+            files,
+            args,
+            history,
+            validation_loss=validation_loss,
+        )
+
+    final_loss = history[-1]["train_loss"]
+    print()
+    print("TRAINING COMPLETE")
+    print(f"files trained: {len(files)}")
+    print("training coverage: 100%")
+    print(f"final training loss: {final_loss:.4f}")
+    print(f"saved checkpoint: {args.checkpoint}")
 
 
 if __name__ == "__main__":
