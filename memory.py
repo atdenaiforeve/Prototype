@@ -48,13 +48,25 @@ class MemoryEngine:
 
     def __init__(self, db_path: str | Path = DB_PATH):
         self.db_path = Path(db_path)
+        self._memory_uri: str | None = None
+        self._memory_keeper: sqlite3.Connection | None = None
+        if str(self.db_path) == ":memory:":
+            # SQLite creates a new private database for every ":memory:" connection.
+            # Keep one shared in-memory database alive so all operations on a
+            # MemoryEngine instance see the same schema and data.
+            self._memory_uri = f"file:prototype-memory-{id(self)}?mode=memory&cache=shared"
+            self._memory_keeper = sqlite3.connect(self._memory_uri, uri=True)
         self._initialize()
 
     def _connect(self) -> sqlite3.Connection:
-        con = sqlite3.connect(self.db_path)
+        if self._memory_uri is not None:
+            con = sqlite3.connect(self._memory_uri, uri=True)
+        else:
+            con = sqlite3.connect(self.db_path)
         con.row_factory = sqlite3.Row
         con.execute("PRAGMA foreign_keys = ON")
-        con.execute("PRAGMA journal_mode = WAL")
+        if self._memory_uri is None:
+            con.execute("PRAGMA journal_mode = WAL")
         return con
 
     def _initialize(self) -> None:
