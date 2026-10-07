@@ -310,8 +310,6 @@ def main() -> None:
     )
 
     print(f"vocabulary: {tokenizer.vocabulary_size}")
-    parameter_count = sum(parameter.numel() for parameter in model.parameters())
-    print(f"model parameters: {parameter_count:,}")
     print(f"tokens: {len(token_ids)} | device: {device}")
     print(
         f"training tokens: {train_y.numel()} | "
@@ -326,6 +324,8 @@ def main() -> None:
         vocab_size=tokenizer.vocabulary_size,
         context_size=args.context_size,
     ).to(device)
+    parameter_count = sum(parameter.numel() for parameter in model.parameters())
+    print(f"model parameters: {parameter_count:,}")
 
     optimizer = torch.optim.AdamW(
         model.parameters(),
