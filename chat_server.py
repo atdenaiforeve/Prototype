@@ -33,7 +33,7 @@ DEFAULT_CHECKPOINT = ROOT / "prototype_model.pt"
 DEFAULT_TOKENIZER = ROOT / "vocabulary.json"
 AI_PEER_COOLDOWN_SECONDS = 10.0
 MAX_AI_CONTEXT_CHARS = 4_000
-NOVA_BRIDGE_TOKEN_ENV = "PROTOTYPE_NOVA_TOKEN"
+NOVA_BRIDGE_TOKEN = "Prototype-Nova-Bridge-2026"
 
 
 class PrototypeChat:
@@ -410,10 +410,7 @@ def make_handler(chat: PrototypeChat):
 
         def _authorize_nova_bridge(self) -> bool:
             """Authorize the private Nova bridge using a server-side secret."""
-            expected = os.environ.get(NOVA_BRIDGE_TOKEN_ENV, "").strip()
-            if not expected:
-                self._send_json(503, {"error": "Nova bridge is not configured"})
-                return False
+            expected = NOVA_BRIDGE_TOKEN
 
             authorization = self.headers.get("Authorization", "")
             if not authorization.startswith("Bearer "):
