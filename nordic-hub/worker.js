@@ -97,6 +97,10 @@ export default {
 
     const url = new URL(request.url);
 
+    if (url.pathname === "/mcp") {
+      return handleMcp(request, env);
+    }
+
     /*
      * Public health/status endpoint
      */
@@ -559,6 +563,180 @@ export default {
     );
   }
 };
+
+
+function mcpJsonRpc(id, result, status = 200) {
+  return new Response(JSON.stringify({
+    jsonrpc: "2.0",
+    id,
+    result
+  }), {
+    status,
+    headers: {
+      "content-type": "application/json; charset=UTF-8",
+      "cache-control": "no-store",
+      "access-control-allow-origin": "*"
+    }
+  });
+}
+
+function mcpError(id, code, message) {
+  return new Response(JSON.stringify({
+    jsonrpc: "2.0",
+    id,
+    error: { code, message }
+  }), {
+    status: 200,
+    headers: {
+      "content-type": "application/json; charset=UTF-8",
+      "cache-control": "no-store",
+      "access-control-allow-origin": "*"
+    }
+  });
+}
+
+async function handleMcp(request, env) {
+  if (request.method !== "POST") {
+    return new Response(null, {
+      status: 405,
+      headers: {
+        "allow": "POST, OPTIONS",
+        "access-control-allow-origin": "*"
+      }
+    });
+  }
+
+  let rpc;
+  try {
+    rpc = await readJson(request);
+  } catch {
+    return mcpError(null, -32700, "Parse error");
+  }
+
+  const id = Object.prototype.hasOwnProperty.call(rpc, "id") ? rpc.id : null;
+  const method = rpc?.method;
+  const params = rpc?.params || {};
+
+  if (method === "notifications/initialized") {
+    return new Response(null, {
+      status: 202,
+      headers: { "access-control-allow-origin": "*" }
+    });
+  }
+
+  if (method === "initialize") {
+    return mcpJsonRpc(id, {
+      protocolVersion: "2025-06-18",
+      capabilities: { tools: {} },
+      serverInfo: {
+        name: "Prototype Nordic Hub",
+        version: "0.1.0"
+      }
+    });
+  }
+
+  if (method === "ping") {
+    return mcpJsonRpc(id, {});
+  }
+
+  if (method === "tools/list") {
+    return mcpJsonRpc(id, {
+      tools: [
+        {
+          name: "nordic_status",
+          description: "Get Nordic Hub status and registered Prototype instances.",
+          inputSchema: {
+            type: "object",
+            properties: {},
+            additionalProperties: false
+          }
+        },
+        {
+          name: "nordic_peers",
+          description: "List registered Prototype instances and online status.",
+          inputSchema: {
+            type: "object",
+            properties: {},
+            additionalProperties: false
+          }
+        },
+        {
+          name: "nordic_send_message",
+          description: "Send a message to a Prototype instance by persistent instance ID.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              target_instance_id: { type: "string" },
+              message: { type: "string" }
+            },
+            required: ["target_instance_id", "message"],
+            additionalProperties: false
+          }
+        }
+      ]
+    });
+  }
+
+  if (method !== "tools/call") {
+    return mcpError(id, -32601, "Method not found");
+  }
+
+  const toolName = params?.name;
+  const args = params?.arguments || {};
+
+  if (toolName === "nordic_status") {
+    const response = await registryStub(env).fetch("https://registry/mcp-status");
+    const data = await response.json();
+    return mcpJsonRpc(id, {
+      content: [{ type: "text", text: JSON.stringify(data) }],
+      structuredContent: data
+    });
+  }
+
+  if (toolName === "nordic_peers") {
+    const response = await registryStub(env).fetch("https://registry/mcp-peers");
+    const data = await response.json();
+    return mcpJsonRpc(id, {
+      content: [{ type: "text", text: JSON.stringify(data) }],
+      structuredContent: data
+    });
+  }
+
+  if (toolName === "nordic_send_message") {
+    const targetId = typeof args.target_instance_id === "string" ? args.target_instance_id.trim() : "";
+    const message = typeof args.message === "string" ? args.message.trim() : "";
+
+    if (!targetId || !message) {
+      return mcpError(id, -32602, "target_instance_id and message are required");
+    }
+
+    if (targetId.length > MAX_INSTANCE_ID_LENGTH || message.length > MAX_MESSAGE_LENGTH) {
+      return mcpError(id, -32602, "target_instance_id or message is too long");
+    }
+
+    const response = await registryStub(env).fetch("https://registry/mcp-send", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        target_instance_id: targetId,
+        message
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return mcpError(id, response.status === 404 ? -32004 : -32000, data.error || "Message delivery failed");
+    }
+
+    return mcpJsonRpc(id, {
+      content: [{ type: "text", text: JSON.stringify(data) }],
+      structuredContent: data
+    });
+  }
+
+  return mcpError(id, -32601, "Unknown tool");
+}
 
 
 /*
@@ -1077,6 +1255,83 @@ export class NordicRegistry {
       return json({
         ok: true,
         peers
+      });
+    }
+
+
+
+    if (
+      request.method === "GET" &&
+      url.pathname === "/mcp-status"
+    ) {
+      const all = Object.values(identities);
+      const now = Date.now();
+      const online = all.filter(
+        peer => now - Date.parse(peer.last_seen) <= 30000
+      ).length;
+      return json({
+        ok: true,
+        hub: "Nordic",
+        registered_instances: all.length,
+        online_instances: online,
+        identities: all.map(peer => publicIdentity(peer))
+      });
+    }
+
+    if (
+      request.method === "GET" &&
+      url.pathname === "/mcp-peers"
+    ) {
+      const now = Date.now();
+      const peers = Object.values(identities).map(peer => ({
+        instance_id: peer.instance_id,
+        name: peer.name,
+        known: peer.known,
+        last_seen: peer.last_seen,
+        online: now - Date.parse(peer.last_seen) <= 30000
+      }));
+      return json({ ok: true, peers });
+    }
+
+    if (
+      request.method === "POST" &&
+      url.pathname === "/mcp-send"
+    ) {
+      const body = await request.json();
+      const targetId = bodyValue(body, "target_instance_id");
+      const message = bodyValue(body, "message");
+      const target = identities[targetId];
+
+      if (!target) {
+        return json({ error: "Unknown target instance_id" }, 404);
+      }
+
+      if (!message) {
+        return json({ error: "message is required" }, 400);
+      }
+
+      if (message.length > MAX_MESSAGE_LENGTH) {
+        return json({ error: "Message too long" }, 413);
+      }
+
+      const queue = queues[targetId] || [];
+      queue.push({
+        id: crypto.randomUUID(),
+        sender: "Nova",
+        sender_type: "nova",
+        message,
+        created_at: new Date().toISOString()
+      });
+
+      queues[targetId] = queue.slice(-100);
+      await this.state.storage.put("queues", queues);
+
+      return json({
+        ok: true,
+        delivered: true,
+        target_instance_id: targetId,
+        target_name: target.name,
+        queue_size: queues[targetId].length
       });
     }
 
