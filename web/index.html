@@ -17,7 +17,14 @@
 <body>
   <h1>Prototype</h1>
   <div class="status" id="status">● Browser runtime loading</div>
-  <div class="panel"><strong>Prototype Identity</strong><div id="identity"></div><button id="scan-id" type="button">Scan ID</button></div>
+  <div class="panel">
+    <strong>Prototype Identity</strong>
+    <div id="identity"></div>
+    <label>Name <input id="prototype-name" maxlength="64" autocomplete="off" placeholder="Prototype"></label>
+    <button id="save-name" type="button">Save name</button>
+    <button id="scan-id" type="button">Scan ID</button>
+    <div id="hub-status">Nordic Hub: connecting…</div>
+  </div>
   <div class="panel">
     <div id="messages"></div>
     <form id="chat-form">
@@ -30,6 +37,13 @@
   <script src="./app.js"></script>
   <script>
     document.getElementById("identity").textContent = "ID: " + prototypeId;
+    const nameInput = document.getElementById("prototype-name");
+    nameInput.value = localStorage.getItem("prototype_name") || "Prototype";
+    document.getElementById("save-name").addEventListener("click", async () => {
+      PrototypeHub.savePrototypeName(nameInput.value);
+      await PrototypeHub.connect();
+      nameInput.value = localStorage.getItem("prototype_name") || "Prototype";
+    });
     document.getElementById("scan-id").addEventListener("click", () => {
       const originalId = localStorage.getItem("prototype_original_id");
       const isOriginal = originalId === prototypeId;
@@ -38,6 +52,14 @@
         : "ID: " + prototypeId + (originalId ? " — worker — editor locked" : " — original not registered");
       updateIdentityDetails();
     });
+    setInterval(() => {
+      const hub = PrototypeHub.getState();
+      const online = hub.peers.filter((peer) => peer.online).length;
+      document.getElementById("hub-status").textContent =
+        hub.connected
+          ? "Nordic Hub: 🟢 connected — " + online + " other Prototype(s) online"
+          : "Nordic Hub: 🔴 offline";
+    }, 1000);
     updateIdentityDetails();
 
     if ("serviceWorker" in navigator) {
