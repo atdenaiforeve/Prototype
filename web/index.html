@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Prototype — Live</title>
+  <title>Prototype — Browser</title>
   <style>
     body{font-family:system-ui,sans-serif;max-width:900px;margin:0 auto;padding:24px;background:#0b0d10;color:#eee}
     h1{margin-bottom:4px}.status{color:#7dff9b}.panel{background:#15191f;border:1px solid #2b313a;border-radius:12px;padding:16px;margin:16px 0}
@@ -15,7 +15,7 @@
 </head>
 <body>
   <h1>Prototype</h1>
-  <div class="status" id="status">Checking server…</div>
+  <div class="status" id="status">● Browser runtime loading</div>
   <div class="panel">
     <div id="messages"></div>
     <form id="chat-form">
@@ -23,34 +23,8 @@
       <button type="submit">Send</button>
     </form>
   </div>
-  <div class="panel"><strong>Server status</strong><pre id="details">Loading…</pre></div>
-<script>
-const messages=document.getElementById("messages");
-const statusEl=document.getElementById("status");
-const details=document.getElementById("details");
-const input=document.getElementById("message");
-const conversationId=crypto.randomUUID();
-function add(role,text,cls){const d=document.createElement("div");d.className="msg "+cls;d.textContent=role+": "+text;messages.appendChild(d);messages.scrollTop=messages.scrollHeight;}
-async function refresh(){
-  try{
-    const r=await fetch("/status",{cache:"no-store"});
-    const data=await r.json();
-    statusEl.textContent=data.server==="online"?"● Prototype online":"● Prototype offline";
-    details.textContent=JSON.stringify(data,null,2);
-  }catch(e){statusEl.textContent="● Server unavailable";details.textContent=String(e);}
-}
-document.getElementById("chat-form").addEventListener("submit",async e=>{
-  e.preventDefault();
-  const text=input.value.trim(); if(!text)return;
-  input.value=""; add("You",text,"user");
-  try{
-    const r=await fetch("/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:text,conversation_id:conversationId})});
-    const data=await r.json();
-    if(!r.ok) throw new Error(data.error||"Request failed");
-    add("Prototype",data.reply,"prototype");
-  }catch(err){add("Error",String(err),"prototype");}
-});
-refresh(); setInterval(refresh,5000);
-</script>
+  <div class="panel"><strong>Runtime</strong><pre id="details">Loading…</pre></div>
+  <script src="./runtime.js"></script>
+  <script src="./app.js"></script>
 </body>
 </html>
