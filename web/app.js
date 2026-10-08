@@ -53,28 +53,39 @@ async function handleChat(event) {
   addMessage("You", text, "user");
   saveConversation();
 
-  // Browser-native inference will plug into this function.
-  const reply = await window.PrototypeRuntime.generate(text, state.conversation);
-  state.conversation.push({ role: "assistant", content: reply });
-  addMessage("Prototype", reply, "prototype");
-  saveConversation();
-  startAutonomousLoop();
+  try {
+    const reply = await window.PrototypeRuntime.generate(text, state.conversation);
+    state.conversation.push({ role: "assistant", content: reply });
+    addMessage("Prototype", reply, "prototype");
+    saveConversation();
+    setStatus("Prototype browser runtime ready");
+    startAutonomousLoop();
+  } catch (error) {
+    console.error(error);
+    const reply = "My browser runtime could not answer yet. The project files are still safe; please reload once the runtime is available.";
+    state.conversation.push({ role: "assistant", content: reply });
+    addMessage("Prototype", reply, "prototype");
+    saveConversation();
+    setStatus("Prototype runtime error");
+  }
 }
 
 function startAutonomousLoop() {
   if (state.autonomousTimer !== null) return;
   state.autonomousTimer = setInterval(async () => {
     if (!state.conversation.length) return;
-    const reply = await window.PrototypeRuntime.autonomous(state.conversation);
-    if (!reply) return;
-    state.conversation.push({ role: "assistant", content: reply });
-    addMessage("Prototype", reply, "prototype");
-    saveConversation();
+    try {
+      const reply = await window.PrototypeRuntime.autonomous(state.conversation);
+      if (!reply) return;
+      state.conversation.push({ role: "assistant", content: reply });
+      addMessage("Prototype", reply, "prototype");
+      saveConversation();
+    } catch (error) {
+      console.error(error);
+    }
   }, state.cooldownMs);
 }
 
-
-// Persistent Prototype device identity.
 function getPrototypeId() {
   const key = "prototype_device_id";
   let id = localStorage.getItem(key);
@@ -97,8 +108,11 @@ function updateIdentityDetails() {
     original_id_known: Boolean(originalId),
     code_editor: isOriginal ? "enabled" : "locked",
     autonomous_cooldown_seconds: 10,
+    ai_to_ai_cooldown_seconds: 0,
     external_ai_connection: false,
+    mcp_required_for_chat: false,
     server_connection: false,
+    codespaces_required_for_chat: false,
     model_runtime: window.PrototypeRuntime.name,
     model_status: window.PrototypeRuntime.status(),
   }, null, 2);
@@ -107,4 +121,4 @@ function updateIdentityDetails() {
 els.form.addEventListener("submit", handleChat);
 loadConversation();
 setStatus("Prototype browser runtime ready");
-updateDetails();
+updateIdentityDetails();
