@@ -2,6 +2,10 @@ name = "nordic-hub"
 main = "worker.js"
 compatibility_date = "2026-10-08"
 
+[observability.logs]
+enabled = false
+invocation_logs = true
+
 [[durable_objects.bindings]]
 name = "NORDIC_REGISTRY"
 class_name = "NordicRegistry"
