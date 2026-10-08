@@ -1,3 +1,11 @@
 name = "nordic-hub"
 main = "worker.js"
 compatibility_date = "2026-10-08"
+
+[[durable_objects.bindings]]
+name = "NORDIC_REGISTRY"
+class_name = "NordicRegistry"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["NordicRegistry"]
