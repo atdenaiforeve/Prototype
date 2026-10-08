@@ -16,6 +16,7 @@
 <body>
   <h1>Prototype</h1>
   <div class="status" id="status">● Browser runtime loading</div>
+  <div class="panel"><strong>Prototype Identity</strong><div id="identity"></div><button id="scan-id" type="button">Scan ID</button></div>
   <div class="panel">
     <div id="messages"></div>
     <form id="chat-form">
@@ -26,5 +27,17 @@
   <div class="panel"><strong>Runtime</strong><pre id="details">Loading…</pre></div>
   <script src="./runtime.js"></script>
   <script src="./app.js"></script>
+  <script>
+    document.getElementById("identity").textContent = "ID: " + prototypeId;
+    document.getElementById("scan-id").addEventListener("click", () => {
+      const originalId = localStorage.getItem("prototype_original_id");
+      const isOriginal = originalId === prototypeId;
+      document.getElementById("identity").textContent = isOriginal
+        ? "ID: " + prototypeId + " — ORIGINAL ✓ — editor enabled"
+        : "ID: " + prototypeId + (originalId ? " — worker — editor locked" : " — original not registered");
+      updateIdentityDetails();
+    });
+    updateIdentityDetails();
+  </script>
 </body>
 </html>
