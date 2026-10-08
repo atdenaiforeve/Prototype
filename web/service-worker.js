@@ -1,4 +1,4 @@
-const CACHE = "prototype-browser-v1";
+const CACHE = "prototype-browser-v2";
 const APP_ASSETS = [
   "./",
   "./index.html",
