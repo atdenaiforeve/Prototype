@@ -1,4 +1,3 @@
-```javascript
 const MAX_MESSAGE_LENGTH = 8000;
 const MAX_REQUEST_BYTES = 12000;
 const MAX_NAME_LENGTH = 64;
@@ -179,7 +178,7 @@ export default {
 
     if (
       !expected ||
-      authorization !== `Bearer ${expected}`
+      authorization !== "Bearer " + expected
     ) {
       /*
        * Browser Prototype instances use their own instance
@@ -341,9 +340,7 @@ export default {
       }
 
       return registryStub(env).fetch(
-        `https://registry/identity?instance_id=${encodeURIComponent(
-          instanceId
-        )}`
+        "https://registry/identity?instance_id=" + encodeURIComponent(instanceId)
       );
     }
 
