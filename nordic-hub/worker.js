@@ -454,6 +454,103 @@ export default {
       );
     }
 
+    /*
+     * Browser Prototype sends to another Prototype instance.
+     * Uses the sender's private instance token, never the master secret.
+     */
+    if (
+      url.pathname === "/instance-message" &&
+      request.method === "POST"
+    ) {
+      let body;
+
+      try {
+        body = await readJson(request);
+      } catch (error) {
+        return json(
+          {
+            error:
+              error.message === "Request too large"
+                ? error.message
+                : "Invalid JSON"
+          },
+          error.message === "Request too large" ? 413 : 400
+        );
+      }
+
+      const senderId = bodyValue(body, "instance_id");
+      const token = bodyValue(body, "token");
+      const targetId = bodyValue(body, "target_instance_id");
+      const message = bodyValue(body, "message");
+
+      if (!senderId || !validToken(token) || !targetId || !message) {
+        return json(
+          { error: "instance_id, token, target_instance_id and message are required" },
+          400
+        );
+      }
+
+      if (message.length > MAX_MESSAGE_LENGTH) {
+        return json({ error: "Message too long" }, 413);
+      }
+
+      return registryStub(env).fetch(
+        "https://registry/instance-message",
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json"
+          },
+          body: JSON.stringify({
+            sender_instance_id: senderId,
+            token,
+            target_instance_id: targetId,
+            message
+          })
+        }
+      );
+    }
+
+    /*
+     * Browser Prototype asks which other instances are online.
+     */
+    if (
+      url.pathname === "/peers" &&
+      request.method === "POST"
+    ) {
+      let body;
+
+      try {
+        body = await readJson(request);
+      } catch {
+        return json({ error: "Invalid JSON" }, 400);
+      }
+
+      const instanceId = bodyValue(body, "instance_id");
+      const token = bodyValue(body, "token");
+
+      if (!instanceId || !validToken(token)) {
+        return json(
+          { error: "instance_id and token are required" },
+          400
+        );
+      }
+
+      return registryStub(env).fetch(
+        "https://registry/peers",
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json"
+          },
+          body: JSON.stringify({
+            instance_id: instanceId,
+            token
+          })
+        }
+      );
+    }
+
     return json(
       {
         error: "Not found"
@@ -890,6 +987,96 @@ export class NordicRegistry {
         ok: true,
         identity:
           publicIdentity(identity)
+      });
+    }
+
+    /*
+     * Browser-to-browser message delivery.
+     */
+    if (
+      request.method === "POST" &&
+      url.pathname === "/instance-message"
+    ) {
+      const body = await request.json();
+      const senderId = bodyValue(body, "sender_instance_id");
+      const token = bodyValue(body, "token");
+      const targetId = bodyValue(body, "target_instance_id");
+      const message = bodyValue(body, "message");
+
+      const sender = identities[senderId];
+      const target = identities[targetId];
+
+      if (!sender || !target) {
+        return json({ error: "Unknown sender or target instance_id" }, 404);
+      }
+
+      if (sender.instance_token !== token) {
+        return unauthorized();
+      }
+
+      if (!message) {
+        return json({ error: "message is required" }, 400);
+      }
+
+      if (message.length > MAX_MESSAGE_LENGTH) {
+        return json({ error: "Message too long" }, 413);
+      }
+
+      const queue = queues[targetId] || [];
+      queue.push({
+        id: crypto.randomUUID(),
+        sender: sender.name,
+        sender_instance_id: sender.instance_id,
+        message,
+        created_at: new Date().toISOString()
+      });
+
+      queues[targetId] = queue.slice(-100);
+      await this.state.storage.put("queues", queues);
+
+      return json({
+        ok: true,
+        delivered: true,
+        target_instance_id: targetId,
+        queue_size: queues[targetId].length
+      });
+    }
+
+    /*
+     * Return public information about other registered instances.
+     * Only the caller's private token can request this list.
+     */
+    if (
+      request.method === "POST" &&
+      url.pathname === "/peers"
+    ) {
+      const body = await request.json();
+      const instanceId = bodyValue(body, "instance_id");
+      const token = bodyValue(body, "token");
+      const identity = identities[instanceId];
+
+      if (!identity) {
+        return json({ error: "Unknown instance_id" }, 404);
+      }
+
+      if (identity.instance_token !== token) {
+        return unauthorized();
+      }
+
+      const now = Date.now();
+      const peers = Object.values(identities)
+        .filter(peer => peer.instance_id !== instanceId)
+        .map(peer => ({
+          instance_id: peer.instance_id,
+          name: peer.name,
+          known: peer.known,
+          last_seen: peer.last_seen,
+          online: now - Date.parse(peer.last_seen) <= 30000
+        }));
+
+      return json({
+        ok: true,
+        peers
       });
     }
 
