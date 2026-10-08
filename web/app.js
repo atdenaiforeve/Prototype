@@ -73,10 +73,29 @@ function startAutonomousLoop() {
   }, state.cooldownMs);
 }
 
-function updateDetails() {
+
+// Persistent Prototype device identity.
+function getPrototypeId() {
+  const key = "prototype_device_id";
+  let id = localStorage.getItem(key);
+  if (!id) {
+    id = "Prototype-" + crypto.randomUUID();
+    localStorage.setItem(key, id);
+  }
+  return id;
+}
+
+const prototypeId = getPrototypeId();
+
+function updateIdentityDetails() {
+  const originalId = localStorage.getItem("prototype_original_id");
+  const isOriginal = originalId === prototypeId;
   els.details.textContent = JSON.stringify({
     runtime: "browser",
-    storage: "localStorage",
+    prototype_id: prototypeId,
+    identity_saved: true,
+    original_id_known: Boolean(originalId),
+    code_editor: isOriginal ? "enabled" : "locked",
     autonomous_cooldown_seconds: 10,
     external_ai_connection: false,
     server_connection: false,
