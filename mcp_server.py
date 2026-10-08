@@ -1,69 +1,151 @@
-import json
-import urllib.error
-import urllib.request
+"""Prototype MCP server.
+
+This is the proper local MCP boundary for Prototype.
+It runs as an MCP host-launched stdio process, so it does not require a
+24/7 public MCP server or expose a network port.
+
+The MCP surface intentionally contains interaction/status tools only.
+It does not expose arbitrary repository editing or GitHub credentials.
+"""
+
+from __future__ import annotations
+
+import threading
 
 from mcp.server import MCPServer
-from mcp.server.transport_security import TransportSecuritySettings
 
-PROTOTYPE_URL = "https://ominous-space-eureka-9qgr546p5v39qp-8000.app.github.dev"
-
-NOVA_SESSION_START = "NOVA_SESSION_START_7F3A"
-NOVA_SESSION_END = "NOVA_SESSION_END_7F3A"
-
-mcp = MCPServer("Prototype Chat")
-session_started = False
+from chat_server import PrototypeChat, ROOT
 
 
-def send_to_prototype(message: str) -> dict:
-    payload = json.dumps({
-        "sender": "Nova",
-        "message": message,
-    }).encode("utf-8")
-    request = urllib.request.Request(
-        f"{PROTOTYPE_URL}/ai/message",
-        data=payload,
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=30) as response:
-            return json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        body = exc.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"Prototype returned HTTP {exc.code}: {body}") from exc
-    except urllib.error.URLError as exc:
-        raise RuntimeError(f"Could not reach Prototype: {exc}") from exc
+mcp = MCPServer("Prototype")
+
+_runtime: PrototypeChat | None = None
+_runtime_lock = threading.Lock()
+
+
+def _get_runtime() -> PrototypeChat:
+    """Lazily create Prototype's Python inference runtime."""
+    global _runtime
+
+    if _runtime is not None:
+        return _runtime
+
+    with _runtime_lock:
+        if _runtime is None:
+            checkpoint = ROOT / "prototype_model.pt"
+            tokenizer = ROOT / "vocabulary.json"
+
+            if not checkpoint.is_file():
+                raise RuntimeError(
+                    "Prototype checkpoint is missing: prototype_model.pt. "
+                    "Train Prototype first."
+                )
+            if not tokenizer.is_file():
+                raise RuntimeError(
+                    "Prototype tokenizer is missing: vocabulary.json. "
+                    "Train Prototype first."
+                )
+
+            _runtime = PrototypeChat(checkpoint, tokenizer)
+
+    return _runtime
 
 
 @mcp.tool()
-def prototype_chat(message: str, end_session: bool = False) -> str:
-    """Chat with Prototype through the small Nova chat bridge.
+def prototype_status() -> dict:
+    """Return Prototype's current MCP and runtime status."""
+    if _runtime is None:
+        return {
+            "name": "Prototype",
+            "mcp": "online",
+            "runtime_initialized": False,
+            "checkpoint_ready": (ROOT / "prototype_model.pt").is_file(),
+            "tokenizer_ready": (ROOT / "vocabulary.json").is_file(),
+        }
 
-    The first call starts the Nova protocol session automatically.
-    Set end_session=true on the final message to send the protocol sign-off.
-    """
-    global session_started
+    return _runtime.status()
 
-    if not session_started:
-        send_to_prototype(NOVA_SESSION_START)
-        session_started = True
 
-    result = send_to_prototype(message)
-    reply = result.get("reply", "")
+@mcp.tool()
+def prototype_chat(message: str, conversation_id: str | None = None) -> dict:
+    """Send a message to Prototype and return its generated response."""
+    return _get_runtime().chat(message, conversation_id=conversation_id)
 
-    if end_session:
-        send_to_prototype(NOVA_SESSION_END)
-        session_started = False
-        return f"{reply}\n[Prototype Nova session ended.]"
 
-    return reply
+@mcp.tool()
+def prototype_nova_message(
+    message: str,
+    conversation_id: str | None = None,
+    context: dict | None = None,
+) -> dict:
+    """Send a message from Nova to Prototype through the MCP boundary."""
+    result = _get_runtime().receive_nova_message(
+        message,
+        conversation_id=conversation_id,
+        context=context,
+    )
+    return {
+        "sender": "Prototype",
+        "bridge": "Nova-MCP",
+        "reply": result["reply"],
+        "conversation_id": result["conversation_id"],
+        "workspace": result["workspace"],
+    }
+
+
+@mcp.tool()
+def prototype_ai_message(
+    sender: str,
+    message: str,
+    conversation_id: str | None = None,
+    context: dict | None = None,
+) -> dict:
+    """Send a message from another explicitly identified AI to Prototype."""
+    result = _get_runtime().receive_ai_message(
+        sender=sender,
+        message=message,
+        conversation_id=conversation_id,
+        context=context,
+    )
+    return {
+        "sender": "Prototype",
+        "reply": result["reply"],
+        "conversation_id": result["conversation_id"],
+        "workspace": result["workspace"],
+    }
+
+
+@mcp.tool()
+def prototype_training_status() -> dict:
+    """Report the training corpus and saved-model readiness."""
+    training_dir = ROOT / "data" / "training"
+    files = (
+        sorted(
+            path.relative_to(training_dir).as_posix()
+            for path in training_dir.rglob("*.txt")
+        )
+        if training_dir.is_dir()
+        else []
+    )
+
+    checkpoint = ROOT / "prototype_model.pt"
+    tokenizer = ROOT / "vocabulary.json"
+
+    return {
+        "training_files": files,
+        "training_file_count": len(files),
+        "checkpoint": {
+            "path": "prototype_model.pt",
+            "exists": checkpoint.is_file(),
+            "size_bytes": checkpoint.stat().st_size if checkpoint.is_file() else 0,
+        },
+        "tokenizer": {
+            "path": "vocabulary.json",
+            "exists": tokenizer.is_file(),
+            "size_bytes": tokenizer.stat().st_size if tokenizer.is_file() else 0,
+        },
+    }
 
 
 if __name__ == "__main__":
-    security = TransportSecuritySettings(enable_dns_rebinding_protection=False)
-    mcp.run(
-        transport="streamable-http",
-        host="0.0.0.0",
-        port=8001,
-        transport_security=security,
-    )
+    mcp.run(transport="stdio")
