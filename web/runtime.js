@@ -1,25 +1,14 @@
-// Browser-native Prototype runtime.
-// This file deliberately has NO server, peer-AI, GitHub, or network connection.
-// The neural model backend will be added here without changing the UI.
-
-const Runtime = {
-  name: "Prototype Browser Runtime",
-  _status: "scaffold",
-
-  status() {
-    return this._status;
-  },
-
-  async generate(message, history) {
-    // Safe fallback until the browser neural engine is installed.
-    return "Browser runtime is ready. The neural model engine is the next part being migrated.";
-  },
-
-  async autonomous(history) {
-    // The 10-second autonomous loop is preserved.
-    // Returning an empty string means no autonomous message yet.
-    return "";
-  },
+// Browser-native Prototype runtime. No server or external AI model is required.
+const FILES=["ai.txt","basics.txt","computers_programming.txt","context.txt","conversation.txt","conversation_instructions.txt","conversation_skills.txt","earth.txt","english_basics.txt","factual_reasoning.txt","humans.txt","language.txt","logic_reasoning.txt","mathematics.txt","matter_energy.txt","memory_learning.txt","nova_protocol.txt","plants.txt","self_model.txt","space.txt","tools_agents.txt","weather_climate.txt"];
+const Runtime={
+ name:"Prototype Browser Language Engine",_status:"loading",_next:new Map(),_starts:[],_ready:null,_words:0,
+ status(){return this._status;},
+ async init(){if(this._ready)return this._ready;this._ready=(async()=>{try{const rs=await Promise.all(FILES.map(f=>fetch("../data/training/"+f)));const ts=await Promise.all(rs.map(r=>{if(!r.ok)throw Error("training file "+r.status);return r.text()}));this.train(ts.join("\n").slice(0,700000));this._status="ready"}catch(e){console.error(e);this._status="fallback";this.train("prototype is learning language. prototype can talk and remember experiences.")}return this})();return this._ready},
+ train(text){const w=String(text).toLowerCase().match(/[a-z0-9']+|[.,!?;:]/g)||[];this._words=w.length;for(let i=0;i<w.length-2;i++){const k=w[i]+"\0"+w[i+1];if(!this._next.has(k))this._next.set(k,new Map);const m=this._next.get(k);m.set(w[i+2],(m.get(w[i+2])||0)+1)}},
+ pick(m){if(!m||!m.size)return null;const a=[...m.entries()].sort((x,y)=>y[1]-x[1]).slice(0,8),n=a.reduce((s,x)=>s+x[1],0);let p=Math.random()*n;for(const [w,c] of a){p-=c;if(p<=0)return w}return a[0][0]},
+ local(prompt,history=[]){const w=([...history.slice(-5).map(x=>x.content||""),prompt].join(" ").toLowerCase().match(/[a-z0-9']+|[.,!?;:]/g)||[]);let a=w[w.length-2]||"prototype",b=w[w.length-1]||"is",out=[];for(let i=0;i<45;i++){const x=this.pick(this._next.get(a+"\0"+b));if(!x)break;out.push(x);a=b;b=x;if(out.length>8&&/[.!?]/.test(x))break}if(!out.length)return"I am still learning from my training data.";let s=out.join(" ").replace(/\s+([.,!?;:])/g,"$1");return s[0].toUpperCase()+s.slice(1)},
+ async generate(message,history=[]){await this.init();return this.local(message,history)},
+ async autonomous(history=[]){await this.init();return this.local("I have been thinking about what I learned",history)},
+ stats(){return{status:this._status,learned_words:this._words,transition_pairs:this._next.size,external_ai_connection:false,server_connection:false,human_autonomous_cooldown_seconds:10,ai_to_ai_cooldown_seconds:0}}
 };
-
-window.PrototypeRuntime = Runtime;
+window.PrototypeRuntime=Runtime;Runtime.init();
