@@ -596,6 +596,21 @@ function mcpError(id, code, message) {
 }
 
 async function handleMcp(request, env) {
+  if (request.method === "GET") {
+    return json({
+      name: "Prototype Nordic MCP",
+      status: "online",
+      protocol: "MCP",
+      endpoint: "/mcp",
+      tools: [
+        "nordic_status",
+        "nordic_peers",
+        "nordic_send_message"
+      ],
+      note: "Use POST for MCP JSON-RPC requests."
+    });
+  }
+
   if (request.method !== "POST") {
     return new Response(null, {
       status: 405,
