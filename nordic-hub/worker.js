@@ -932,4 +932,3 @@ function publicIdentity(
 
   return result;
 }
-```
