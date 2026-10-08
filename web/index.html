@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b0d10">
   <title>Prototype — Browser</title>
   <style>
     body{font-family:system-ui,sans-serif;max-width:900px;margin:0 auto;padding:24px;background:#0b0d10;color:#eee}
@@ -38,6 +39,12 @@
       updateIdentityDetails();
     });
     updateIdentityDetails();
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./service-worker.js")
+        .then(() => console.log("Prototype offline cache ready"))
+        .catch((error) => console.warn("Offline cache unavailable:", error));
+    }
   </script>
 </body>
 </html>
