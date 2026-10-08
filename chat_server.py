@@ -366,10 +366,14 @@ def make_handler(chat: PrototypeChat):
                 })
                 return
             if parsed.path == "/":
+                self._send_file(ROOT / "web" / "index.html")
+                return
+
+            if parsed.path == "/api":
                 self._send_json(200, {
                     "name": "Prototype",
                     "status": "online",
-                    "message": "Prototype server is running.",
+                    "message": "Prototype Python server is running.",
                     "api": {
                         "chat": "POST /chat",
                         "autonomous_messages": "GET /autonomous/messages?conversation_id=...",
