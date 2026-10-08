@@ -1,2 +1,3 @@
 numpy>=1.26
 mcp[cli]>=2,<3
+torch>=2.2,<3
