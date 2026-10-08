@@ -31,7 +31,6 @@ from self_model import SelfModel
 ROOT = Path(__file__).resolve().parent
 DEFAULT_CHECKPOINT = ROOT / "prototype_model.pt"
 DEFAULT_TOKENIZER = ROOT / "vocabulary.json"
-AI_PEER_COOLDOWN_SECONDS = 10.0
 MAX_AI_CONTEXT_CHARS = 4_000
 NOVA_BRIDGE_TOKEN = "Prototype-Nova-Bridge-2026"
 
@@ -68,7 +67,6 @@ class PrototypeChat:
         self.lock = threading.Lock()
         self.autonomous_outbox: dict[str, list[str]] = {}
         self.autonomous_started: set[str] = set()
-        self.peer_last_message: dict[str, float] = {}
 
     def chat(self, message: str, conversation_id: str | None = None) -> dict:
         if not isinstance(message, str):
@@ -84,8 +82,6 @@ class PrototypeChat:
         else:
             conversation_id = conversation_id.strip()
 
-        # Treat what the person explicitly tells Prototype as learnable
-        # experience. It is stored as what they said, not as an inferred fact.
         self.learning.learn_from_user(message, conversation_id=conversation_id)
 
         with self.lock:
@@ -156,8 +152,6 @@ class PrototypeChat:
         while True:
             threading.Event().wait(10.0)
 
-            # Snapshot conversation state under the lock, then release it while
-            # Prototype thinks so normal chat requests remain responsive.
             with self.lock:
                 history = self.conversations.get(conversation_id)
                 if not history:
@@ -192,8 +186,6 @@ class PrototypeChat:
                 if not reply:
                     continue
 
-                # Re-check before appending because the conversation may have
-                # changed while Prototype was generating the autonomous message.
                 with self.lock:
                     if conversation_id not in self.conversations:
                         return
@@ -279,18 +271,6 @@ class PrototypeChat:
             raise ValueError("context must contain JSON-compatible values") from exc
         if len(context_text) > MAX_AI_CONTEXT_CHARS:
             raise ValueError("context is too large")
-
-        now = time.monotonic()
-        with self.lock:
-            previous = self.peer_last_message.get(sender)
-            if previous is not None:
-                elapsed = now - previous
-                if elapsed < AI_PEER_COOLDOWN_SECONDS:
-                    remaining = max(0.0, AI_PEER_COOLDOWN_SECONDS - elapsed)
-                    raise ValueError(
-                        f"peer cooldown active; retry in {remaining:.1f} seconds"
-                    )
-            self.peer_last_message[sender] = now
 
         self.learning.memory.remember(
             f"AI peer {sender} said: {message}",
