@@ -23,6 +23,7 @@ from urllib.parse import parse_qs, urlparse
 from inference import generate, load_checkpoint, reason_generate
 from learning import LearningLoop
 from communication import AICommunication
+from network import PrototypeNetwork
 from experience import ExperienceEngine
 from experience_agent import ExperienceAgent
 from self_model import SelfModel
@@ -57,6 +58,8 @@ class PrototypeChat:
             lambda prompt, **kwargs: generate(self.model, self.tokenizer, prompt, **kwargs),
         )
         self.communication = AICommunication(memory=self.learning.memory)
+        self.network = PrototypeNetwork()
+        self.network.reload_keys()
         self.self_model = SelfModel()
         self.candidates = candidates
         self.max_new_tokens = max_new_tokens
@@ -235,6 +238,7 @@ class PrototypeChat:
             },
             "autonomous_conversations": len(self.autonomous_started),
             "configured_peers": len(self.communication.peers),
+            "network": self.network.status(),
         }
 
     def pop_autonomous_messages(self, conversation_id: str) -> list[str]:
@@ -328,7 +332,7 @@ def make_handler(chat: PrototypeChat):
         def do_OPTIONS(self) -> None:
             self.send_response(204)
             self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Access-Control-Allow-Headers", "Content-Type")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Prototype-Key")
             self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
             self.end_headers()
 
@@ -372,6 +376,9 @@ def make_handler(chat: PrototypeChat):
             if parsed.path == "/experience/status":
                 self._send_json(200, chat.experience.status())
                 return
+            if parsed.path == "/network/status":
+                self._send_json(200, chat.network.status())
+                return
             if parsed.path == "/peers":
                 self._send_json(200, {"peers": chat.communication.list_peers()})
                 return
@@ -407,6 +414,12 @@ def make_handler(chat: PrototypeChat):
                 return False
             return True
 
+        def _network_key(self) -> str:
+            authorization = self.headers.get("Authorization", "")
+            if authorization.startswith("Bearer "):
+                return authorization[7:].strip()
+            return self.headers.get("X-Prototype-Key", "").strip()
+
         def do_POST(self) -> None:
             parsed = urlparse(self.path)
             allowed = {
@@ -416,6 +429,9 @@ def make_handler(chat: PrototypeChat):
                 "/communicate",
                 "/ai/message",
                 "/nova/message",
+                "/network/register",
+                "/network/message",
+                "/network/messages",
                 "/self-update/intention",
                 "/self-update/freeze",
                 "/self-update/unfreeze",
@@ -455,6 +471,37 @@ def make_handler(chat: PrototypeChat):
                         context=body.get("context"),
                     )
                     self._send_json(200, result)
+                    return
+
+                if parsed.path == "/network/register":
+                    agent_id = str(body.get("agent_id", "")).strip()
+                    if not chat.network.authenticate(agent_id, self._network_key()):
+                        self._send_json(401, {"error": "invalid network credentials"})
+                        return
+                    agent = chat.network.register_agent(
+                        agent_id,
+                        body.get("display_name", agent_id),
+                        body.get("kind", "ai"),
+                    )
+                    self._send_json(200, {"agent_id": agent.agent_id, "display_name": agent.display_name, "kind": agent.kind})
+                    return
+
+                if parsed.path == "/network/message":
+                    agent_id = str(body.get("agent_id", "")).strip()
+                    if not chat.network.authenticate(agent_id, self._network_key()):
+                        self._send_json(401, {"error": "invalid network credentials"})
+                        return
+                    result = chat.network.send(agent_id, body.get("room_id", "main"), body.get("message", ""))
+                    self._send_json(200, result)
+                    return
+
+                if parsed.path == "/network/messages":
+                    agent_id = str(body.get("agent_id", "")).strip()
+                    if not chat.network.authenticate(agent_id, self._network_key()):
+                        self._send_json(401, {"error": "invalid network credentials"})
+                        return
+                    messages = chat.network.history(agent_id, body.get("room_id", "main"), body.get("after"))
+                    self._send_json(200, {"messages": messages})
                     return
 
                 if parsed.path == "/ai/message":
