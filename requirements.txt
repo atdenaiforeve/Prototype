@@ -1,2 +1,4 @@
-torch>=2.0
-numpy>=1.26\nmcp[cli]>=2,<3\n
+```text
+numpy>=1.26
+mcp[cli]>=2,<3
+```
