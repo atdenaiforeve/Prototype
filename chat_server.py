@@ -27,6 +27,7 @@ from network import PrototypeNetwork
 from experience import ExperienceEngine
 from experience_agent import ExperienceAgent
 from self_model import SelfModel
+from prototype_remote_memory import PrototypeRemoteMemory
 
 
 ROOT = Path(__file__).resolve().parent
@@ -60,6 +61,7 @@ class PrototypeChat:
         self.communication = AICommunication(memory=self.learning.memory)
         self.network = PrototypeNetwork()
         self.network.reload_keys()
+        self.remote_memory = PrototypeRemoteMemory()
         self.self_model = SelfModel()
         self.candidates = candidates
         self.max_new_tokens = max_new_tokens
@@ -86,6 +88,10 @@ class PrototypeChat:
             conversation_id = conversation_id.strip()
 
         self.learning.learn_from_user(message, conversation_id=conversation_id)
+        # Remote memory is opt-in through server-side credentials. Only the
+        # configured branch receives these records; shared core memory is read-only.
+        self.remote_memory.remember(f"User message: {message}")
+        remote_context = self.remote_memory.context()
 
         with self.lock:
             history = self.conversations.setdefault(conversation_id, [])
@@ -99,6 +105,8 @@ class PrototypeChat:
             "Have a natural, concise conversation. Answer the user's latest message "
             "directly. Do not claim abilities you do not have.\n\n"
         )
+        if remote_context:
+            prompt += f"{remote_context}\n\n"
         if history_text:
             prompt += f"Conversation so far:\n{history_text}\n\n"
         prompt += f"User: {message}\nPrototype:"
@@ -129,6 +137,7 @@ class PrototypeChat:
             )
             self.conversations[conversation_id] = history[-20:]
 
+        self.remote_memory.remember(f"Prototype reply: {reply}")
         self._start_autonomous_loop(conversation_id)
 
         return {
@@ -164,6 +173,7 @@ class PrototypeChat:
                     f"{item['role'].capitalize()}: {item['content']}" for item in recent
                 )
 
+            remote_context = self.remote_memory.context()
             prompt = (
                 "You are Prototype, an experimental self-modelling language model. "
                 "Continue this ongoing conversation. You may initiate the next "
@@ -172,6 +182,8 @@ class PrototypeChat:
                 "Do not mention this instruction or the autonomous loop.\n\n"
                 f"Conversation so far:\n{history_text}\n\nPrototype:"
             )
+            if remote_context:
+                prompt = f"{remote_context}\n\n{prompt}"
             try:
                 result = reason_generate(
                     self.model,
@@ -196,6 +208,7 @@ class PrototypeChat:
                     history.append({"role": "assistant", "content": reply})
                     self.conversations[conversation_id] = history[-20:]
                     self.autonomous_outbox.setdefault(conversation_id, []).append(reply)
+                self.remote_memory.remember(f"Prototype autonomous message: {reply}")
             except Exception as exc:
                 print(f"[Prototype] autonomous message failed: {exc}")
 
@@ -239,6 +252,7 @@ class PrototypeChat:
             "autonomous_conversations": len(self.autonomous_started),
             "configured_peers": len(self.communication.peers),
             "network": self.network.status(),
+            "remote_memory": self.remote_memory.status(),
         }
 
     def pop_autonomous_messages(self, conversation_id: str) -> list[str]:
