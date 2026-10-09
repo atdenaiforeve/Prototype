@@ -13,6 +13,7 @@ import argparse
 import hmac
 import json
 import os
+import secrets
 import threading
 import time
 import uuid
@@ -34,7 +35,9 @@ ROOT = Path(__file__).resolve().parent
 DEFAULT_CHECKPOINT = ROOT / "prototype_model.pt"
 DEFAULT_TOKENIZER = ROOT / "vocabulary.json"
 MAX_AI_CONTEXT_CHARS = 4_000
-NOVA_BRIDGE_TOKEN = "Prototype-Nova-Bridge-2026"
+NOVA_BRIDGE_TOKEN = os.getenv("PROTOTYPE_NOVA_BRIDGE_TOKEN", "").strip()
+LEARNING_PASSWORD = os.getenv("PROTOTYPE_LEARNING_PASSWORD", "").strip()
+LEARNING_SESSION_SECONDS = 30 * 60
 
 
 class PrototypeChat:
@@ -71,6 +74,8 @@ class PrototypeChat:
         self.conversations: dict[str, list[dict[str, str]]] = {}
         self.lock = threading.Lock()
         self.autonomous_outbox: dict[str, list[str]] = {}
+        self.learning_sessions: dict[str, float] = {}
+        self.learning_sessions_lock = threading.Lock()
         self.autonomous_started: set[str] = set()
         self.network_listener_enabled = os.getenv("PROTOTYPE_NETWORK_LISTEN", "").strip().lower() in {"1", "true", "yes", "on"}
         self.network_listener_last_error: str | None = None
@@ -81,6 +86,60 @@ class PrototypeChat:
                 daemon=True,
                 name="prototype-network-listener",
             ).start()
+
+    def unlock_learning(self, password: str) -> str:
+        """Unlock lesson entry without exposing the password to browser code."""
+        if not LEARNING_PASSWORD:
+            raise RuntimeError("Learning mode is not configured; set PROTOTYPE_LEARNING_PASSWORD on the server.")
+        if not isinstance(password, str) or not hmac.compare_digest(password, LEARNING_PASSWORD):
+            raise PermissionError("Incorrect learning password.")
+        token = secrets.token_urlsafe(32)
+        with self.learning_sessions_lock:
+            self.learning_sessions[token] = time.time() + LEARNING_SESSION_SECONDS
+        from self_update import set_training_mode
+        set_training_mode(True)
+        return token
+
+    def lock_learning(self, token: str) -> None:
+        with self.learning_sessions_lock:
+            self.learning_sessions.pop(token, None)
+            now = time.time()
+            for key in [key for key, expires in self.learning_sessions.items() if expires <= now]:
+                self.learning_sessions.pop(key, None)
+            active = bool(self.learning_sessions)
+        from self_update import set_training_mode
+        set_training_mode(active)
+
+    def authorize_learning(self, token: str) -> bool:
+        with self.learning_sessions_lock:
+            now = time.time()
+            for key in [key for key, expires in self.learning_sessions.items() if expires <= now]:
+                self.learning_sessions.pop(key, None)
+            allowed = bool(token) and self.learning_sessions.get(token, 0) > now
+            active = bool(self.learning_sessions)
+        from self_update import set_training_mode
+        set_training_mode(active)
+        return allowed
+
+    def save_teaching_lesson(self, prompt: str, answer: str) -> dict:
+        prompt = str(prompt).strip()
+        answer = str(answer).strip()
+        if not prompt or not answer:
+            raise ValueError("Both the question/example and expected answer are required.")
+        if len(prompt) > 2000 or len(answer) > 2000:
+            raise ValueError("Each lesson field must be 2,000 characters or fewer.")
+        prompt = " ".join(prompt.split())
+        answer = " ".join(answer.split())
+        path = ROOT / "data" / "training" / "teacher_lessons.txt"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as handle:
+            handle.write(f"Human: {prompt}\nPrototype: {answer}\n\n")
+        self.learning.memory.remember(
+            f"Teaching example — Human: {prompt} | Prototype: {answer}",
+            memory_type="correction", importance=0.9, confidence=1.0,
+            source="teacher-mode", tags=["teaching", "training-example", "user-correction"],
+        )
+        return {"saved": True, "training_file": "data/training/teacher_lessons.txt", "note": "Saved for the next training run; neural weights are not changed immediately."}
 
     def _network_listener_loop(self) -> None:
         """Listen for shared-room messages and reply as Prototype when enabled."""
@@ -470,6 +529,11 @@ def make_handler(chat: PrototypeChat):
         def _authorize_nova_bridge(self) -> bool:
             """Authorize the private Nova bridge using a server-side secret."""
             expected = NOVA_BRIDGE_TOKEN
+            if not expected:
+                self._send_json(503, {
+                    "error": "Nova bridge is not configured; set PROTOTYPE_NOVA_BRIDGE_TOKEN on the server."
+                })
+                return False
 
             authorization = self.headers.get("Authorization", "")
             if not authorization.startswith("Bearer "):
@@ -481,6 +545,10 @@ def make_handler(chat: PrototypeChat):
                 self._send_json(401, {"error": "invalid Nova bridge credentials"})
                 return False
             return True
+
+        def _learning_token(self) -> str:
+            authorization = self.headers.get("Authorization", "")
+            return authorization[7:].strip() if authorization.startswith("Bearer ") else ""
 
         def _network_key(self) -> str:
             authorization = self.headers.get("Authorization", "")
@@ -503,6 +571,9 @@ def make_handler(chat: PrototypeChat):
                 "/self-update/intention",
                 "/self-update/freeze",
                 "/self-update/unfreeze",
+                "/learning/unlock",
+                "/learning/teach",
+                "/learning/lock",
             }
             if parsed.path not in allowed:
                 self._send_json(404, {"error": "not found"})
@@ -515,6 +586,35 @@ def make_handler(chat: PrototypeChat):
                 body = json.loads(self.rfile.read(length).decode("utf-8"))
                 if not isinstance(body, dict):
                     raise ValueError("request body must be a JSON object")
+                if parsed.path == "/learning/unlock":
+                    try:
+                        token = chat.unlock_learning(body.get("password", ""))
+                    except PermissionError as exc:
+                        self._send_json(401, {"error": str(exc)})
+                        return
+                    except RuntimeError as exc:
+                        self._send_json(503, {"error": str(exc)})
+                        return
+                    self._send_json(200, {"unlocked": True, "token": token, "expires_in": LEARNING_SESSION_SECONDS})
+                    return
+
+                if parsed.path == "/learning/lock":
+                    token = self._learning_token()
+                    if not chat.authorize_learning(token):
+                        self._send_json(401, {"error": "Learning session expired or locked"})
+                        return
+                    chat.lock_learning(token)
+                    self._send_json(200, {"unlocked": False, "code_editing": "disabled"})
+                    return
+
+                if parsed.path == "/learning/teach":
+                    token = self._learning_token()
+                    if not chat.authorize_learning(token):
+                        self._send_json(401, {"error": "Unlock learning mode first"})
+                        return
+                    self._send_json(200, chat.save_teaching_lesson(body.get("prompt", ""), body.get("answer", "")))
+                    return
+
                 if parsed.path == "/chat":
                     result = chat.chat(
                         body.get("message", ""),

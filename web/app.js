@@ -326,7 +326,7 @@ function updateIdentityDetails() {
         last_error: state.hub.lastError,
       },
       original_id_known: Boolean(originalId),
-      code_editor: isOriginal ? "enabled" : "locked",
+      code_editor: "disabled",
       autonomous_cooldown_seconds: 10,
       ai_to_ai_cooldown_seconds: 0,
       external_ai_connection: false,

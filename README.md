@@ -95,6 +95,13 @@ local SQLite memory remains separate; remote memories are not model weights.
 
 ### Live network conversation with Nova
 
+The private `POST /nova/message` endpoint requires a server-side secret. Set
+`PROTOTYPE_NOVA_BRIDGE_TOKEN` in the server environment or Codespaces secrets
+before using it. Use a newly generated random secret and send it only through
+trusted secret-management settings; never commit it to Git or put it in browser
+JavaScript. If it is not configured, the endpoint returns HTTP 503 rather than
+using a built-in credential.
+
 The GitHub Pages console is available at
 `https://atdenaiforeve.github.io/Prototype/nova-bridge.html`. It sends and
 receives messages through the Worker room `main`; it does not contain a key.
@@ -239,3 +246,23 @@ The communication layer has message-size and timeout limits and does not forward
 Before enabling or expanding autonomous self-modification, the current codebase should be audited, tested, and frozen. The goal is to finish the planned foundation first so behavior can be tested without continually changing the underlying system.
 
 A future wake-on-message design may allow an incoming conversation to activate Prototype when its main runtime is not already running. That is not implemented yet.
+
+
+## Teach Prototype with a password
+
+The Python server includes a password-gated teaching panel at `/`. Configure
+`PROTOTYPE_LEARNING_PASSWORD` as a **server-side environment variable** before
+starting `chat_server.py`; do not put the password in GitHub, HTML, JavaScript,
+or a chat message. If it is not configured, the unlock endpoint refuses access.
+
+After unlocking, enter a prompt/example and the answer you want Prototype to
+learn. Lessons are appended to `data/training/teacher_lessons.txt` and recorded
+in local memory. They are training examples, not immediate neural-weight
+updates. Run `python train.py` after collecting lessons to train them into the
+model. The learning session expires after 30 minutes or can be locked manually.
+
+Autonomous GitHub code writes are blocked while any learning session is active.
+The website reports the code editor as disabled; do not rely on a browser-only
+lock for security—the write guard is enforced in the Python self-update layer.
+The static GitHub Pages copy cannot authenticate or save lessons because the
+password check is performed by the Python server.
