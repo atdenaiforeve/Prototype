@@ -639,9 +639,17 @@ def make_handler(chat: PrototypeChat):
                     if transcript:
                         TEACHING_FILE.parent.mkdir(parents=True, exist_ok=True)
                         with TEACHING_FILE.open("a", encoding="utf-8") as lesson_file:
-                            lesson_file.write("\\n# Teaching session\\n")
+                            lesson_file.write("\n# Teaching session\n")
                             for user_text, prototype_text in transcript:
-                                lesson_file.write(f"User: {user_text}\\nPrototype: {prototype_text}\\n\\n")
+                                lesson_file.write(f"User: {user_text}\nPrototype: {prototype_text}\n\n")
+                                chat.learning.memory.remember(
+                                    f"Owner teaching session — user said: {user_text}\nPrototype replied: {prototype_text}",
+                                    memory_type="experience",
+                                    importance=0.8,
+                                    confidence=0.65,
+                                    source="owner-teaching-session",
+                                    tags=["teaching", "session-transcript", "user-taught"],
+                                )
                     with learning_sessions_lock:
                         learning_sessions.pop(token, None)
                         still_active = bool(learning_sessions)
@@ -675,7 +683,15 @@ def make_handler(chat: PrototypeChat):
                     TEACHING_FILE.parent.mkdir(parents=True, exist_ok=True)
                     with TEACHING_FILE.open("a", encoding="utf-8") as lesson_file:
                         lesson_file.write(f"User: {prompt}\nPrototype: {response}\n\n")
-                    self._send_json(200, {"ok": True, "saved": True, "message": "Lesson saved for a future training run; model weights have not changed yet."})
+                    chat.learning.memory.remember(
+                        f"Question: {prompt}\nCorrect answer: {response}",
+                        memory_type="correction",
+                        importance=1.0,
+                        confidence=1.0,
+                        source="owner-learning-panel",
+                        tags=["teaching", "correction", "user-taught"],
+                    )
+                    self._send_json(200, {"ok": True, "saved": True, "memory_saved": True, "training_example_saved": True, "model_weights_updated": False, "message": "Lesson saved to persistent memory and the training curriculum. Model weights have not changed; that requires a training run."})
                     return
 
                 if parsed.path.startswith("/self-update/") and active_learning_sessions():
@@ -696,9 +712,17 @@ def make_handler(chat: PrototypeChat):
                         if transcript:
                             TEACHING_FILE.parent.mkdir(parents=True, exist_ok=True)
                             with TEACHING_FILE.open("a", encoding="utf-8") as lesson_file:
-                                lesson_file.write("\\n# Teaching session\\n")
+                                lesson_file.write("\n# Teaching session\n")
                                 for user_text, prototype_text in transcript:
-                                    lesson_file.write(f"User: {user_text}\\nPrototype: {prototype_text}\\n\\n")
+                                    lesson_file.write(f"User: {user_text}\nPrototype: {prototype_text}\n\n")
+                                    chat.learning.memory.remember(
+                                        f"Owner teaching session — user said: {user_text}\nPrototype replied: {prototype_text}",
+                                        memory_type="experience",
+                                        importance=0.8,
+                                        confidence=0.65,
+                                        source="owner-teaching-session",
+                                        tags=["teaching", "session-transcript", "user-taught"],
+                                    )
                         with learning_sessions_lock:
                             learning_sessions.pop(token, None)
                             still_active = bool(learning_sessions)
