@@ -12,6 +12,7 @@
     .user{border-left:3px solid #6ab4ff}.prototype{border-left:3px solid #7dff9b}
     form{display:flex;gap:8px}input{flex:1;padding:12px;border-radius:8px;border:1px solid #3a424d;background:#0e1115;color:#fff}
     button{padding:12px 18px;border:0;border-radius:8px;cursor:pointer}
+    .learning-grid{display:grid;gap:10px}.learning-grid input,.learning-grid textarea{box-sizing:border-box;width:100%;padding:12px;border-radius:8px;border:1px solid #3a424d;background:#0e1115;color:#fff}.learning-grid textarea{min-height:90px;resize:vertical}.learning-actions{display:flex;gap:8px;flex-wrap:wrap}#learning-status{white-space:pre-wrap;color:#b7c7d8}
   </style>
 </head>
 <body>
@@ -31,6 +32,22 @@
       <input id="message" autocomplete="off" placeholder="Talk to Prototype…" required>
       <button type="submit">Send</button>
     </form>
+  </div>
+  <div class="panel">
+    <strong>Owner Learning Mode</strong>
+    <p>Enter the URL of the Prototype Python server and your private learning password. The password is sent only to that server; it is not saved in browser storage.</p>
+    <div class="learning-grid">
+      <label>Python server URL <input id="learning-server" type="url" placeholder="https://your-prototype-server"></label>
+      <label>Learning password <input id="learning-password" type="password" autocomplete="current-password" placeholder="Server-side password"></label>
+      <div class="learning-actions">
+        <button id="learning-unlock" type="button">Unlock learning mode</button>
+        <button id="learning-lock" type="button" disabled>Lock learning mode</button>
+      </div>
+      <label>What should Prototype learn? <textarea id="lesson-prompt" maxlength="8000" placeholder="Example: What is your role?"></textarea></label>
+      <label>Correct response <textarea id="lesson-response" maxlength="8000" placeholder="The answer you want Prototype to learn"></textarea></label>
+      <button id="lesson-save" type="button" disabled>Save lesson</button>
+      <div id="learning-status" role="status">Learning mode is locked.</div>
+    </div>
   </div>
   <div class="panel"><strong>Runtime</strong><pre id="details">Loading…</pre></div>
   <script src="./runtime.js"></script>
@@ -61,6 +78,80 @@
           : "Nordic Hub: 🔴 offline";
     }, 1000);
     updateIdentityDetails();
+
+    // The learning password is never persisted. The short-lived session token
+    // exists only in this page's memory and is sent to the Python server.
+    const learningServer = document.getElementById("learning-server");
+    const learningPassword = document.getElementById("learning-password");
+    const learningStatus = document.getElementById("learning-status");
+    const learningUnlock = document.getElementById("learning-unlock");
+    const learningLock = document.getElementById("learning-lock");
+    const lessonSave = document.getElementById("lesson-save");
+    let learningSessionToken = "";
+    if (location.port === "8000") learningServer.value = location.origin;
+
+    function learningBaseUrl() {
+      return learningServer.value.trim().replace(/\\/+$/, "");
+    }
+    function showLearningStatus(message) {
+      learningStatus.textContent = message;
+    }
+    async function learningRequest(path, body, authenticated = false) {
+      const headers = { "Content-Type": "application/json" };
+      if (authenticated && learningSessionToken) {
+        headers.Authorization = "Bearer " + learningSessionToken;
+      }
+      const response = await fetch(learningBaseUrl() + path, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body || {}),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || ("Server returned HTTP " + response.status));
+      return data;
+    }
+    learningUnlock.addEventListener("click", async () => {
+      if (!learningBaseUrl()) {
+        showLearningStatus("Enter the URL of the running Prototype Python server first.");
+        return;
+      }
+      learningUnlock.disabled = true;
+      try {
+        const data = await learningRequest("/learning/unlock", { password: learningPassword.value });
+        learningSessionToken = data.session_token;
+        learningPassword.value = "";
+        learningLock.disabled = false;
+        lessonSave.disabled = false;
+        showLearningStatus("Learning mode unlocked for 30 minutes. Code updating is frozen.");
+      } catch (error) {
+        showLearningStatus("Could not unlock: " + error.message);
+      } finally {
+        learningUnlock.disabled = false;
+      }
+    });
+    learningLock.addEventListener("click", async () => {
+      try {
+        await learningRequest("/learning/lock", {}, true);
+        learningSessionToken = "";
+        lessonSave.disabled = true;
+        learningLock.disabled = true;
+        showLearningStatus("Learning session locked. Server-side code updates remain frozen until manually re-enabled.");
+      } catch (error) {
+        showLearningStatus("Could not lock session: " + error.message);
+      }
+    });
+    lessonSave.addEventListener("click", async () => {
+      const prompt = document.getElementById("lesson-prompt").value.trim();
+      const response = document.getElementById("lesson-response").value.trim();
+      try {
+        const data = await learningRequest("/learning/teach", { prompt, response }, true);
+        showLearningStatus(data.message || "Lesson saved.");
+        document.getElementById("lesson-prompt").value = "";
+        document.getElementById("lesson-response").value = "";
+      } catch (error) {
+        showLearningStatus("Lesson not saved: " + error.message);
+      }
+    });
 
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("./service-worker.js")
