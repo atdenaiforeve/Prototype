@@ -163,7 +163,7 @@ class PrototypeChat:
             teaching_file.parent.mkdir(parents=True, exist_ok=True)
             with teaching_file.open("a", encoding="utf-8") as lesson_file:
                 lesson_file.write(
-                    f"User: {lesson_prompt}\\nPrototype: {lesson_response}\\n\\n"
+                    f"User: {lesson_prompt}\nPrototype: {lesson_response}\n\n"
                 )
             reply = f"Lesson saved. I'll be able to retrieve it from memory now; my model weights will update only after training."
             with self.lock:
