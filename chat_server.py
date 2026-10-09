@@ -37,7 +37,7 @@ DEFAULT_TOKENIZER = ROOT / "vocabulary.json"
 MAX_AI_CONTEXT_CHARS = 4_000
 NOVA_BRIDGE_TOKEN = os.environ.get("PROTOTYPE_NOVA_BRIDGE_TOKEN", "").strip()
 LEARNING_SESSION_SECONDS = 30 * 60
-TEACHING_FILE = ROOT / "data" / "training" / "teacher_lessons.jsonl"
+TEACHING_FILE = ROOT / "data" / "training" / "teacher_lessons.txt"
 
 
 class PrototypeChat:
@@ -597,10 +597,9 @@ def make_handler(chat: PrototypeChat):
                         raise ValueError("prompt and response must not be empty")
                     if len(prompt) > 8000 or len(response) > 8000:
                         raise ValueError("prompt and response must be 8000 characters or fewer")
-                    record = {"prompt": prompt, "response": response, "source": "owner_teaching_mode", "created_at": int(time.time())}
                     TEACHING_FILE.parent.mkdir(parents=True, exist_ok=True)
                     with TEACHING_FILE.open("a", encoding="utf-8") as lesson_file:
-                        lesson_file.write(json.dumps(record, ensure_ascii=False) + "\\n")
+                        lesson_file.write(f"User: {prompt}\\nPrototype: {response}\\n\\n")
                     self._send_json(200, {"ok": True, "saved": True, "message": "Lesson saved for a future training run; model weights have not changed yet."})
                     return
 
