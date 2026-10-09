@@ -138,6 +138,50 @@ class PrototypeChat:
         else:
             conversation_id = conversation_id.strip()
 
+        # Live teaching command: "teach: question => corrected answer".
+        # It records an explicit correction in persistent memory and in the
+        # normal training corpus, so the user can teach Prototype from chat.
+        if message.lower().startswith("teach:"):
+            lesson = message[len("teach:"):].strip()
+            if "=>" not in lesson:
+                raise ValueError("Use: teach: question => correct answer")
+            lesson_prompt, lesson_response = (part.strip() for part in lesson.split("=>", 1))
+            if not lesson_prompt or not lesson_response:
+                raise ValueError("Both the question and correct answer are required")
+            if len(lesson_prompt) > 8000 or len(lesson_response) > 8000:
+                raise ValueError("The question and answer must each be 8000 characters or fewer")
+
+            self.learning.memory.remember(
+                f"Question: {lesson_prompt}\nCorrect answer: {lesson_response}",
+                memory_type="correction",
+                importance=1.0,
+                confidence=1.0,
+                source="live-teaching",
+                tags=["teaching", "correction", "user-taught"],
+            )
+            teaching_file = ROOT / "data" / "training" / "teacher_lessons.txt"
+            teaching_file.parent.mkdir(parents=True, exist_ok=True)
+            with teaching_file.open("a", encoding="utf-8") as lesson_file:
+                lesson_file.write(
+                    f"User: {lesson_prompt}\\nPrototype: {lesson_response}\\n\\n"
+                )
+            reply = f"Lesson saved. I'll be able to retrieve it from memory now; my model weights will update only after training."
+            with self.lock:
+                history = self.conversations.setdefault(conversation_id, [])
+                history.extend([
+                    {"role": "user", "content": message},
+                    {"role": "assistant", "content": reply},
+                ])
+                self.conversations[conversation_id] = history[-20:]
+            return {
+                "conversation_id": conversation_id,
+                "reply": reply,
+                "taught": True,
+                "memory_saved": True,
+                "training_example_saved": True,
+                "model_weights_updated": False,
+            }
+
         self.learning.learn_from_user(message, conversation_id=conversation_id)
         # Remote memory is opt-in through server-side credentials. Only the
         # configured branch receives these records; shared core memory is read-only.
