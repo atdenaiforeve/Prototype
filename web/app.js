@@ -271,12 +271,21 @@ async function handleChat(event) {
         body: JSON.stringify({
           message: text,
           conversation_id: state.serverConversationId || undefined,
+          learning_session_token: learningSessionToken || undefined,
         }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || ("Python server returned HTTP " + response.status));
       reply = data.reply;
       state.serverConversationId = data.conversation_id || state.serverConversationId;
+      if (data.lesson_ended) {
+        learningSessionToken = "";
+        state.learningModeActive = false;
+        updateIdentityDetails();
+        lessonSave.disabled = true;
+        learningLock.disabled = true;
+        showLearningStatus(data.reply || "Teaching session ended and saved. You can now test recall in ordinary chat.");
+      }
       if (typeof reply !== "string" || !reply.trim()) throw new Error("Python model returned an empty reply");
     } else {
       reply = await window.PrototypeRuntime.generate(text, state.conversation);
