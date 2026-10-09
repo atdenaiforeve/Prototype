@@ -91,7 +91,7 @@
     if (location.port === "8000") learningServer.value = location.origin;
 
     function learningBaseUrl() {
-      return learningServer.value.trim().replace(/\\/+$/, "");
+      return learningServer.value.trim().replace(/\/+$/, "");
     }
     function showLearningStatus(message) {
       learningStatus.textContent = message;
