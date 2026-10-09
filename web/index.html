@@ -65,8 +65,8 @@
       const originalId = localStorage.getItem("prototype_original_id");
       const isOriginal = originalId === prototypeId;
       document.getElementById("identity").textContent = isOriginal
-        ? "ID: " + prototypeId + " — ORIGINAL ✓ — editor enabled"
-        : "ID: " + prototypeId + (originalId ? " — worker — editor locked" : " — original not registered");
+        ? "ID: " + prototypeId + " — ORIGINAL ✓ — code editing disabled"
+        : "ID: " + prototypeId + (originalId ? " — worker — code editing disabled" : " — original not registered");
       updateIdentityDetails();
     });
     setInterval(() => {
