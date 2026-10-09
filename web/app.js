@@ -1,5 +1,6 @@
 const state = {
   conversation: [],
+  serverConversationId: "",
   autonomousTimer: null,
   cooldownMs: 10_000,
   hub: {
@@ -259,17 +260,34 @@ async function handleChat(event) {
   saveConversation();
 
   try {
-    const reply = await window.PrototypeRuntime.generate(
-      text,
-      state.conversation
-    );
+    const serverInput = document.getElementById("learning-server");
+    const serverUrl = serverInput ? serverInput.value.trim().replace(/\\/+$/, "") : "";
+    let reply;
+    if (serverUrl) {
+      const response = await fetch(serverUrl + "/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: text,
+          conversation_id: state.serverConversationId || undefined,
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || ("Python server returned HTTP " + response.status));
+      reply = data.reply;
+      state.serverConversationId = data.conversation_id || state.serverConversationId;
+      if (typeof reply !== "string" || !reply.trim()) throw new Error("Python model returned an empty reply");
+    } else {
+      reply = await window.PrototypeRuntime.generate(text, state.conversation);
+    }
     state.conversation.push({ role: "assistant", content: reply });
     addMessage("Prototype", reply, "prototype");
     saveConversation();
+    const usingPython = Boolean(document.getElementById("learning-server")?.value.trim());
     setStatus(
-      state.hub.connected
-        ? "Prototype browser runtime ready — Nordic Hub connected"
-        : "Prototype browser runtime ready"
+      usingPython
+        ? (state.hub.connected ? "Prototype Python model ready — Nordic Hub connected" : "Prototype Python model ready")
+        : (state.hub.connected ? "Prototype browser runtime ready — Nordic Hub connected" : "Prototype browser runtime ready")
     );
     startAutonomousLoop();
   } catch (error) {
