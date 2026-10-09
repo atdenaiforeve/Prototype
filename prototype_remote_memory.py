@@ -9,7 +9,6 @@ from __future__ import annotations
 import json
 import os
 import re
-import socket
 import threading
 import uuid
 from pathlib import Path
