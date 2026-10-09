@@ -72,6 +72,54 @@ class PrototypeChat:
         self.lock = threading.Lock()
         self.autonomous_outbox: dict[str, list[str]] = {}
         self.autonomous_started: set[str] = set()
+        self.network_listener_enabled = os.getenv("PROTOTYPE_NETWORK_LISTEN", "").strip().lower() in {"1", "true", "yes", "on"}
+        self.network_listener_last_error: str | None = None
+        self.network_listener_last_message_ms = 0
+        if self.network_listener_enabled and self.remote_memory.agent_key:
+            threading.Thread(
+                target=self._network_listener_loop,
+                daemon=True,
+                name="prototype-network-listener",
+            ).start()
+
+    def _network_listener_loop(self) -> None:
+        """Listen for shared-room messages and reply as Prototype when enabled."""
+        # Ignore old room history at startup; only handle messages arriving after
+        # this process starts. The server-side agent key never leaves this process.
+        self.network_listener_last_message_ms = int(time.time() * 1000)
+        while True:
+            try:
+                messages = self.remote_memory.network_messages_after(
+                    self.network_listener_last_message_ms, "main"
+                )
+                for item in messages:
+                    timestamp_ms = int(item.get("timestamp_ms") or 0)
+                    self.network_listener_last_message_ms = max(
+                        self.network_listener_last_message_ms, timestamp_ms
+                    )
+                    if item.get("agent_id") == self.remote_memory.agent_id:
+                        continue
+                    message = str(item.get("message", "")).strip()
+                    if not message:
+                        continue
+                    sender = str(item.get("display_name") or item.get("agent_id") or "Network agent")
+                    try:
+                        result = self.receive_ai_message(
+                            sender=sender,
+                            message=message[:4000],
+                            conversation_id="network-main",
+                        )
+                        reply = str(result.get("reply", "")).strip()
+                        if reply:
+                            self.remote_memory.send_network_message(reply[:4000], "main")
+                        self.network_listener_last_error = None
+                    except Exception as exc:
+                        self.network_listener_last_error = str(exc)[:180]
+                        print(f"[Prototype] network reply failed: {self.network_listener_last_error}")
+            except Exception as exc:
+                self.network_listener_last_error = self.remote_memory._safe_error(exc)
+                print(f"[Prototype] network listener unavailable: {self.network_listener_last_error}")
+            threading.Event().wait(3.0)
 
     def chat(self, message: str, conversation_id: str | None = None) -> dict:
         if not isinstance(message, str):
@@ -253,6 +301,12 @@ class PrototypeChat:
             "configured_peers": len(self.communication.peers),
             "network": self.network.status(),
             "remote_memory": self.remote_memory.status(),
+            "remote_network_listener": {
+                "enabled": self.network_listener_enabled,
+                "running": self.network_listener_enabled and bool(self.remote_memory.agent_key),
+                "last_message_ms": self.network_listener_last_message_ms,
+                "last_error": self.network_listener_last_error,
+            },
         }
 
     def pop_autonomous_messages(self, conversation_id: str) -> list[str]:
