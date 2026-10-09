@@ -420,6 +420,7 @@ def _read_generation() -> int:
 def make_handler(chat: PrototypeChat):
     learning_sessions: dict[str, float] = {}
     learning_sessions_lock = threading.Lock()
+    teaching_transcripts: dict[str, list[tuple[str, str]]] = {}
 
     def active_learning_sessions() -> bool:
         now = time.time()
@@ -585,6 +586,7 @@ def make_handler(chat: PrototypeChat):
                 "/learning/unlock",
                 "/learning/lock",
                 "/learning/teach",
+                "/learning/signoff",
             }
             if parsed.path not in allowed:
                 self._send_json(404, {"error": "not found"})
@@ -609,6 +611,7 @@ def make_handler(chat: PrototypeChat):
                     session_token = secrets.token_urlsafe(32)
                     with learning_sessions_lock:
                         learning_sessions[session_token] = time.time() + LEARNING_SESSION_SECONDS
+                    teaching_transcripts[session_token] = []
                     from self_update import GitHubSelfUpdater
                     GitHubSelfUpdater.freeze()
                     self._send_json(200, {"ok": True, "session_token": session_token, "expires_in_seconds": LEARNING_SESSION_SECONDS, "code_editing_disabled": True})
@@ -624,6 +627,34 @@ def make_handler(chat: PrototypeChat):
                         learning_sessions.pop(token, None)
                         still_active = bool(learning_sessions)
                     self._send_json(200, {"ok": True, "active": still_active, "code_editing_disabled": True})
+                    return
+
+                if parsed.path == "/learning/signoff":
+                    auth = self.headers.get("Authorization", "")
+                    token = auth[7:].strip() if auth.startswith("Bearer ") else ""
+                    if not token or not valid_learning_token(token):
+                        self._send_json(401, {"error": "A valid learning session is required"})
+                        return
+                    transcript = teaching_transcripts.pop(token, [])
+                    if transcript:
+                        TEACHING_FILE.parent.mkdir(parents=True, exist_ok=True)
+                        with TEACHING_FILE.open("a", encoding="utf-8") as lesson_file:
+                            lesson_file.write("\\n# Teaching session\\n")
+                            for user_text, prototype_text in transcript:
+                                lesson_file.write(f"User: {user_text}\\nPrototype: {prototype_text}\\n\\n")
+                    with learning_sessions_lock:
+                        learning_sessions.pop(token, None)
+                        still_active = bool(learning_sessions)
+                    self._send_json(200, {
+                        "ok": True,
+                        "ended": True,
+                        "turns_saved": len(transcript),
+                        "message": (
+                            f"Teaching session ended. Saved {len(transcript)} chat turn(s) to the training curriculum. "
+                            "You can now test recall in ordinary chat; model weights still require a training run to change."
+                        ),
+                        "active": still_active,
+                    })
                     return
 
                 if parsed.path == "/learning/teach":
@@ -654,10 +685,36 @@ def make_handler(chat: PrototypeChat):
                     return
 
                 if parsed.path == "/chat":
-                    result = chat.chat(
-                        body.get("message", ""),
-                        body.get("conversation_id"),
-                    )
+                    message = body.get("message", "")
+                    token = body.get("learning_session_token", "")
+                    teaching_active = isinstance(token, str) and bool(token) and valid_learning_token(token)
+                    if isinstance(message, str) and message.strip().lower() in {"sign-off", "sign off", "end lesson", "/end-lesson"}:
+                        if not teaching_active:
+                            self._send_json(401, {"error": "Unlock learning mode before signing off a lesson"})
+                            return
+                        transcript = teaching_transcripts.pop(token, [])
+                        if transcript:
+                            TEACHING_FILE.parent.mkdir(parents=True, exist_ok=True)
+                            with TEACHING_FILE.open("a", encoding="utf-8") as lesson_file:
+                                lesson_file.write("\\n# Teaching session\\n")
+                                for user_text, prototype_text in transcript:
+                                    lesson_file.write(f"User: {user_text}\\nPrototype: {prototype_text}\\n\\n")
+                        with learning_sessions_lock:
+                            learning_sessions.pop(token, None)
+                            still_active = bool(learning_sessions)
+                        self._send_json(200, {
+                            "conversation_id": body.get("conversation_id"),
+                            "reply": f"Teaching session ended. Saved {len(transcript)} chat turn(s). You can now test what I remember in ordinary chat. My model weights change only after training.",
+                            "lesson_ended": True,
+                            "turns_saved": len(transcript),
+                            "active": still_active,
+                        })
+                        return
+                    result = chat.chat(message, body.get("conversation_id"))
+                    if teaching_active and isinstance(message, str):
+                        teaching_transcripts.setdefault(token, []).append(
+                            (message.strip()[:8000], str(result.get("reply", ""))[:8000])
+                        )
                     self._send_json(200, result)
                     return
 
