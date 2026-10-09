@@ -1,6 +1,7 @@
 const state = {
   conversation: [],
   serverConversationId: "",
+  learningModeActive: false,
   autonomousTimer: null,
   cooldownMs: 10_000,
   hub: {
@@ -289,7 +290,7 @@ async function handleChat(event) {
         ? (state.hub.connected ? "Prototype Python model ready — Nordic Hub connected" : "Prototype Python model ready")
         : (state.hub.connected ? "Prototype browser runtime ready — Nordic Hub connected" : "Prototype browser runtime ready")
     );
-    startAutonomousLoop();
+    if (!document.getElementById("learning-server")?.value.trim()) startAutonomousLoop();
   } catch (error) {
     console.error(error);
     const reply =
@@ -332,7 +333,7 @@ function updateIdentityDetails() {
 
   els.details.textContent = JSON.stringify(
     {
-      runtime: "browser",
+      runtime: document.getElementById("learning-server")?.value.trim() ? "Python server / trained checkpoint" : "browser",
       prototype_id: prototypeId,
       prototype_name: getPrototypeName(),
       identity_saved: true,
@@ -344,12 +345,12 @@ function updateIdentityDetails() {
         last_error: state.hub.lastError,
       },
       original_id_known: Boolean(originalId),
-      code_editor: isOriginal ? "enabled" : "locked",
+      code_editor: state.learningModeActive ? "locked during owner learning mode" : (isOriginal ? "enabled" : "locked"),
       autonomous_cooldown_seconds: 10,
       ai_to_ai_cooldown_seconds: 0,
       external_ai_connection: false,
       mcp_required_for_chat: false,
-      server_connection: false,
+      server_connection: Boolean(document.getElementById("learning-server")?.value.trim()),
       codespaces_required_for_chat: false,
       model_runtime: window.PrototypeRuntime.name,
       model_status: window.PrototypeRuntime.status(),
