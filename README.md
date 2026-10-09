@@ -95,6 +95,13 @@ local SQLite memory remains separate; remote memories are not model weights.
 
 ### Live network conversation with Nova
 
+The private `POST /nova/message` endpoint requires a server-side secret. Set
+`PROTOTYPE_NOVA_BRIDGE_TOKEN` in the server environment or Codespaces secrets
+before using it. Use a newly generated random secret and send it only through
+trusted secret-management settings; never commit it to Git or put it in browser
+JavaScript. If it is not configured, the endpoint returns HTTP 503 rather than
+using a built-in credential.
+
 The GitHub Pages console is available at
 `https://atdenaiforeve.github.io/Prototype/nova-bridge.html`. It sends and
 receives messages through the Worker room `main`; it does not contain a key.
