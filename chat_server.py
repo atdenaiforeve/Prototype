@@ -124,7 +124,7 @@ class PrototypeChat:
                 print(f"[Prototype] network listener unavailable: {self.network_listener_last_error}")
             threading.Event().wait(3.0)
 
-    def chat(self, message: str, conversation_id: str | None = None) -> dict:
+    def chat(self, message: str, conversation_id: str | None = None, *, teaching_mode: bool = False) -> dict:
         if not isinstance(message, str):
             raise ValueError("message must be a string")
         message = message.strip()
@@ -200,6 +200,14 @@ class PrototypeChat:
             "Have a natural, concise conversation. Answer the user's latest message "
             "directly. Do not claim abilities you do not have.\n\n"
         )
+        if teaching_mode:
+            prompt = (
+                "The owner has unlocked a teaching session. Treat the owner's messages "
+                "as lesson material to understand and remember. If a message states a fact "
+                "or corrects you, acknowledge it clearly; if it is ambiguous, ask a short "
+                "clarifying question. Do not claim that model weights changed.\n\n"
+                + prompt
+            )
         if remote_context:
             prompt += f"{remote_context}\n\n"
         if history_text:
@@ -734,7 +742,10 @@ def make_handler(chat: PrototypeChat):
                             "active": still_active,
                         })
                         return
-                    result = chat.chat(message, body.get("conversation_id"))
+                    if isinstance(message, str) and message.strip().lower().startswith("teach:") and not teaching_active:
+                        self._send_json(401, {"error": "Unlock Owner Learning Mode before using the teach: command"})
+                        return
+                    result = chat.chat(message, body.get("conversation_id"), teaching_mode=teaching_active)
                     if teaching_active and isinstance(message, str):
                         teaching_transcripts.setdefault(token, []).append(
                             (message.strip()[:8000], str(result.get("reply", ""))[:8000])
