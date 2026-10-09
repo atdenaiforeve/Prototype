@@ -661,6 +661,9 @@ def make_handler(chat: PrototypeChat):
                     with learning_sessions_lock:
                         learning_sessions.pop(token, None)
                         still_active = bool(learning_sessions)
+                    if not still_active:
+                        from self_update import GitHubSelfUpdater
+                        GitHubSelfUpdater.unfreeze()
                     self._send_json(200, {
                         "ok": True,
                         "ended": True,
@@ -734,6 +737,9 @@ def make_handler(chat: PrototypeChat):
                         with learning_sessions_lock:
                             learning_sessions.pop(token, None)
                             still_active = bool(learning_sessions)
+                        if not still_active:
+                            from self_update import GitHubSelfUpdater
+                            GitHubSelfUpdater.unfreeze()
                         self._send_json(200, {
                             "conversation_id": body.get("conversation_id"),
                             "reply": f"Teaching session ended. Saved {len(transcript)} chat turn(s). You can now test what I remember in ordinary chat. My model weights change only after training.",
