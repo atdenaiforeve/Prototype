@@ -41,7 +41,7 @@
       <label>Learning password <input id="learning-password" type="password" autocomplete="current-password" placeholder="Server-side password"></label>
       <div class="learning-actions">
         <button id="learning-unlock" type="button">Unlock learning mode</button>
-        <button id="learning-lock" type="button" disabled>Lock learning mode</button>
+        <button id="learning-lock" type="button" disabled>End lesson &amp; save</button>
       </div>
       <label>What should Prototype learn? <textarea id="lesson-prompt" maxlength="8000" placeholder="Example: What is your role?"></textarea></label>
       <label>Correct response <textarea id="lesson-response" maxlength="8000" placeholder="The answer you want Prototype to learn"></textarea></label>
@@ -133,13 +133,13 @@
     });
     learningLock.addEventListener("click", async () => {
       try {
-        await learningRequest("/learning/lock", {}, true);
+        const data = await learningRequest("/learning/signoff", {}, true);
         learningSessionToken = "";
         state.learningModeActive = false;
         updateIdentityDetails();
         lessonSave.disabled = true;
         learningLock.disabled = true;
-        showLearningStatus("Learning session locked. Server-side code updates remain frozen until manually re-enabled.");
+        showLearningStatus(data.message || "Teaching session ended and saved. You can now test recall in ordinary chat.");
       } catch (error) {
         showLearningStatus("Could not lock session: " + error.message);
       }
