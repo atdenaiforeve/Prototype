@@ -119,6 +119,8 @@
       try {
         const data = await learningRequest("/learning/unlock", { password: learningPassword.value });
         learningSessionToken = data.session_token;
+        state.learningModeActive = true;
+        updateIdentityDetails();
         learningPassword.value = "";
         learningLock.disabled = false;
         lessonSave.disabled = false;
@@ -133,6 +135,8 @@
       try {
         await learningRequest("/learning/lock", {}, true);
         learningSessionToken = "";
+        state.learningModeActive = false;
+        updateIdentityDetails();
         lessonSave.disabled = true;
         learningLock.disabled = true;
         showLearningStatus("Learning session locked. Server-side code updates remain frozen until manually re-enabled.");
