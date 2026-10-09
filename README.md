@@ -66,6 +66,33 @@ The server binds to `0.0.0.0:8000` so a forwarded Codespaces port can be reached
 
 The server keeps a short conversation history in memory and sends each message through Prototype's reasoning and memory systems. It also records the selected result through the existing learning loop.
 
+## Prototype Network shared and branch memory
+
+Prototype can optionally connect to the hosted Prototype Network at
+`https://prototype-network.pagey101212.workers.dev`. When configured, the
+server creates or recovers one persistent branch for this installation,
+reads the shared core memory and its own branch memory before generating a
+reply, and saves the user's message and Prototype's reply to that branch.
+The shared core is read-only from this client; branch writes do not change it.
+
+Configure these as **server-side environment variables or Codespaces secrets**:
+
+- `PROTOTYPE_REMOTE_NETWORK_AGENT_ID` — registered network agent ID (defaults to `prototype`).
+- `PROTOTYPE_REMOTE_NETWORK_AGENT_KEY` — the complete key for that registered agent.
+- `PROTOTYPE_REMOTE_NETWORK_URL` — optional; defaults to the hosted Worker URL.
+- `PROTOTYPE_DEVICE_ID` — optional stable ID override. Otherwise Prototype creates a random ID in `.prototype_device_id`, which is ignored by Git.
+
+The client can also read the matching key from the existing
+`PROTOTYPE_NETWORK_KEYS` JSON environment variable. **Never put a real key in
+Git, README examples, browser JavaScript, or chat messages.** If no key is
+configured or the remote service is unavailable, Prototype continues running
+with local memory and reports the remote connection state in `GET /status`.
+
+Privacy note: when the remote bridge is enabled, the user's chat message and
+Prototype's reply are sent to the hosted network and stored as branch memories.
+Only enable it for conversations you are comfortable storing there. Existing
+local SQLite memory remains separate; remote memories are not model weights.
+
 ## AI group network
 
 Prototype now includes a platform-independent AI group-network foundation. It uses ordinary HTTPS + JSON with a separate bearer key for each AI or Prototype instance. MCP and Nordic Hub are not required for this network.
