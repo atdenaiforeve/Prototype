@@ -13,6 +13,7 @@ import argparse
 import hmac
 import json
 import os
+import secrets
 import threading
 import time
 import uuid
@@ -34,7 +35,9 @@ ROOT = Path(__file__).resolve().parent
 DEFAULT_CHECKPOINT = ROOT / "prototype_model.pt"
 DEFAULT_TOKENIZER = ROOT / "vocabulary.json"
 MAX_AI_CONTEXT_CHARS = 4_000
-NOVA_BRIDGE_TOKEN = "Prototype-Nova-Bridge-2026"
+NOVA_BRIDGE_TOKEN = os.environ.get("PROTOTYPE_NOVA_BRIDGE_TOKEN", "").strip()
+LEARNING_SESSION_SECONDS = 30 * 60
+TEACHING_FILE = ROOT / "data" / "training" / "teacher_lessons.jsonl"
 
 
 class PrototypeChat:
@@ -371,6 +374,28 @@ def _read_generation() -> int:
 
 
 def make_handler(chat: PrototypeChat):
+    learning_sessions: dict[str, float] = {}
+    learning_sessions_lock = threading.Lock()
+
+    def active_learning_sessions() -> bool:
+        now = time.time()
+        with learning_sessions_lock:
+            expired = [token for token, expiry in learning_sessions.items() if expiry <= now]
+            for token in expired:
+                learning_sessions.pop(token, None)
+            return bool(learning_sessions)
+
+    def valid_learning_token(token: str) -> bool:
+        now = time.time()
+        with learning_sessions_lock:
+            expiry = learning_sessions.get(token)
+            if expiry is None:
+                return False
+            if expiry <= now:
+                learning_sessions.pop(token, None)
+                return False
+            return True
+
     class Handler(BaseHTTPRequestHandler):
         server_version = "PrototypeChat/1.0"
 
@@ -409,6 +434,12 @@ def make_handler(chat: PrototypeChat):
             if parsed.path == "/status":
                 self._send_json(200, chat.status())
                 return
+            if parsed.path == "/learning/status":
+                from self_update import GitHubSelfUpdater
+                active = active_learning_sessions()
+                frozen = GitHubSelfUpdater.is_frozen()
+                self._send_json(200, {"active": active, "session_minutes": 30, "code_editing_disabled": active or frozen, "password_configured": bool(os.environ.get("PROTOTYPE_LEARNING_PASSWORD", "").strip())})
+                return
             if parsed.path == "/health":
                 self._send_json(200, {
                     "status": "ok",
@@ -434,6 +465,7 @@ def make_handler(chat: PrototypeChat):
                         "nova_bridge": "POST /nova/message (Bearer token required)",
                         "self_model": "GET /status",
                         "self_update": "GET /self-update/status + POST /self-update/intention",
+                        "learning_mode": "POST /learning/unlock + POST /learning/lock + POST /learning/teach",
                     },
                     "generation": _read_generation(),
                 })
@@ -470,6 +502,9 @@ def make_handler(chat: PrototypeChat):
         def _authorize_nova_bridge(self) -> bool:
             """Authorize the private Nova bridge using a server-side secret."""
             expected = NOVA_BRIDGE_TOKEN
+            if not expected:
+                self._send_json(503, {"error": "Nova bridge is not configured on the server"})
+                return False
 
             authorization = self.headers.get("Authorization", "")
             if not authorization.startswith("Bearer "):
@@ -503,6 +538,9 @@ def make_handler(chat: PrototypeChat):
                 "/self-update/intention",
                 "/self-update/freeze",
                 "/self-update/unfreeze",
+                "/learning/unlock",
+                "/learning/lock",
+                "/learning/teach",
             }
             if parsed.path not in allowed:
                 self._send_json(404, {"error": "not found"})
@@ -515,6 +553,63 @@ def make_handler(chat: PrototypeChat):
                 body = json.loads(self.rfile.read(length).decode("utf-8"))
                 if not isinstance(body, dict):
                     raise ValueError("request body must be a JSON object")
+                if parsed.path == "/learning/unlock":
+                    configured_password = os.environ.get("PROTOTYPE_LEARNING_PASSWORD", "").strip()
+                    if not configured_password:
+                        self._send_json(503, {"error": "Learning mode is not configured. Set PROTOTYPE_LEARNING_PASSWORD on the server."})
+                        return
+                    supplied_password = body.get("password", "")
+                    if not isinstance(supplied_password, str) or not hmac.compare_digest(supplied_password, configured_password):
+                        self._send_json(401, {"error": "Incorrect learning password"})
+                        return
+                    session_token = secrets.token_urlsafe(32)
+                    with learning_sessions_lock:
+                        learning_sessions[session_token] = time.time() + LEARNING_SESSION_SECONDS
+                    from self_update import GitHubSelfUpdater
+                    GitHubSelfUpdater.freeze()
+                    self._send_json(200, {"ok": True, "session_token": session_token, "expires_in_seconds": LEARNING_SESSION_SECONDS, "code_editing_disabled": True})
+                    return
+
+                if parsed.path == "/learning/lock":
+                    auth = self.headers.get("Authorization", "")
+                    token = auth[7:].strip() if auth.startswith("Bearer ") else ""
+                    if not token or not valid_learning_token(token):
+                        self._send_json(401, {"error": "A valid learning session is required"})
+                        return
+                    with learning_sessions_lock:
+                        learning_sessions.pop(token, None)
+                        still_active = bool(learning_sessions)
+                    self._send_json(200, {"ok": True, "active": still_active, "code_editing_disabled": True})
+                    return
+
+                if parsed.path == "/learning/teach":
+                    auth = self.headers.get("Authorization", "")
+                    token = auth[7:].strip() if auth.startswith("Bearer ") else ""
+                    if not token or not valid_learning_token(token):
+                        self._send_json(401, {"error": "A valid learning session is required"})
+                        return
+                    prompt = body.get("prompt", "")
+                    response = body.get("response", "")
+                    if not isinstance(prompt, str) or not isinstance(response, str):
+                        raise ValueError("prompt and response must be text")
+                    prompt, response = prompt.strip(), response.strip()
+                    if not prompt or not response:
+                        raise ValueError("prompt and response must not be empty")
+                    if len(prompt) > 8000 or len(response) > 8000:
+                        raise ValueError("prompt and response must be 8000 characters or fewer")
+                    record = {"prompt": prompt, "response": response, "source": "owner_teaching_mode", "created_at": int(time.time())}
+                    TEACHING_FILE.parent.mkdir(parents=True, exist_ok=True)
+                    with TEACHING_FILE.open("a", encoding="utf-8") as lesson_file:
+                        lesson_file.write(json.dumps(record, ensure_ascii=False) + "\\n")
+                    self._send_json(200, {"ok": True, "saved": True, "message": "Lesson saved for a future training run; model weights have not changed yet."})
+                    return
+
+                if parsed.path.startswith("/self-update/") and active_learning_sessions():
+                    from self_update import GitHubSelfUpdater
+                    GitHubSelfUpdater.freeze()
+                    self._send_json(423, {"error": "Code updates are disabled while learning mode is active"})
+                    return
+
                 if parsed.path == "/chat":
                     result = chat.chat(
                         body.get("message", ""),
