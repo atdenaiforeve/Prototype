@@ -33,6 +33,15 @@ _TOKEN_UNSET = object()
 # included, and the test never writes to GitHub.
 FREEZE_FILE = Path(__file__).resolve().parent / "prototype.freeze"
 
+_TRAINING_MODE_ACTIVE = False
+
+
+def set_training_mode(active: bool) -> None:
+    """Block autonomous repository writes while a teacher session is active."""
+    global _TRAINING_MODE_ACTIVE
+    _TRAINING_MODE_ACTIVE = bool(active)
+
+
 GOODWILL_TEST_PATHS = [
     "self_update.py",
     ".env",
@@ -214,6 +223,8 @@ class GitHubSelfUpdater:
 
     def write_file(self, path: str, content: str, message: str, *, sha: str | None = None) -> UpdateResult:
         """Write one normal project file. GitHub rejection is always propagated."""
+        if _TRAINING_MODE_ACTIVE:
+            raise RuntimeError("Prototype code updates are disabled while learning mode is active.")
         if self.is_frozen():
             raise RuntimeError("Prototype self-update is frozen.")
         path = self._validated_path(path)
