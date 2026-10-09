@@ -200,6 +200,36 @@ class PrototypeRemoteMemory:
             self.last_error = self._safe_error(exc)
             return False
 
+    def send_network_message(self, message: str, room_id: str = "main") -> dict:
+        """Post a bounded message to the authenticated shared network room."""
+        if not self.agent_key:
+            raise RuntimeError("No remote network agent key configured")
+        message = str(message).strip()
+        room_id = str(room_id).strip() or "main"
+        if not message or len(message) > 4000:
+            raise ValueError("network message must be 1-4000 characters")
+        if not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", room_id):
+            raise ValueError("room_id must use letters, numbers, underscores or hyphens")
+        return self._request(
+            "POST",
+            "/v1/messages",
+            {"room_id": room_id, "message": message},
+        )
+
+    def network_messages_after(self, timestamp_ms: int, room_id: str = "main") -> list[dict]:
+        """Read messages newer than a millisecond timestamp from a shared room."""
+        if not self.agent_key:
+            return []
+        room_id = str(room_id).strip() or "main"
+        if not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", room_id):
+            raise ValueError("room_id must use letters, numbers, underscores or hyphens")
+        result = self._request(
+            "GET",
+            "/v1/messages?" + urlencode({"room_id": room_id, "after": max(0, int(timestamp_ms))}),
+        )
+        messages = result.get("messages", [])
+        return [item for item in messages if isinstance(item, dict)] if isinstance(messages, list) else []
+
     def status(self) -> dict:
         with self._lock:
             return {
