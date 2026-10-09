@@ -74,7 +74,7 @@ def load_or_build_token_ids(
         except (OSError, ValueError, TypeError, json.JSONDecodeError):
             pass
 
-    token_ids = load_or_build_token_ids(text, tokenizer, args.token_cache)
+    token_ids = tokenizer.encode(text, add_boundaries=True)
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     cache_path.write_text(
         json.dumps({"version": 1, "fingerprint": fingerprint, "token_ids": token_ids}),
