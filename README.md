@@ -10,6 +10,19 @@ Prototype now runs as a server-first runtime. The server connects the trained mo
 
 The repository also contains a bounded self-update foundation. Prototype can record a fresh update intention in memory, retrieve it, inspect ordinary repository files, validate a local checkout, create a rollback branch, and record an auditable update event. Protected files such as credentials, GitHub workflows, the memory database, and the self-update controller itself are not available to autonomous writes.
 
+## Owner teaching mode
+
+The Python server supports a password-gated teaching session. Configure these **server-side environment variables** before starting it:
+
+- `PROTOTYPE_LEARNING_PASSWORD`: a private password you choose.
+- `PROTOTYPE_NOVA_BRIDGE_TOKEN`: a newly generated private bridge token for Nova.
+
+Do not put either secret in browser JavaScript, the repository, or a message. The old bridge token was committed publicly, so treat it as compromised and replace it wherever the bridge is configured. Removing it from the current file does not erase it from Git history.
+
+Open the browser served by the Python server, or enter that server's URL in the Owner Learning Mode panel. Unlocking creates a 30-minute session and freezes the self-update system. Each saved prompt/answer is appended to `data/training/teacher_lessons.txt`, which the trainer discovers automatically. **Saving a lesson does not immediately change the model's weights.** To train on the new lessons, stop the server and run `python train.py` when you are ready. Keep the Python server private and use HTTPS when accessing it over a network.
+
+The server-side endpoints are `POST /learning/unlock`, `POST /learning/teach`, `POST /learning/lock`, and `GET /learning/status`. Lesson submission and locking require the short-lived session token returned by unlock. A locked or expired session leaves self-updating frozen until an operator explicitly re-enables it.
+
 ## Install
 
 Install the Python dependency set before training or running the neural model:
