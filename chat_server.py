@@ -599,7 +599,7 @@ def make_handler(chat: PrototypeChat):
                         raise ValueError("prompt and response must be 8000 characters or fewer")
                     TEACHING_FILE.parent.mkdir(parents=True, exist_ok=True)
                     with TEACHING_FILE.open("a", encoding="utf-8") as lesson_file:
-                        lesson_file.write(f"User: {prompt}\\nPrototype: {response}\\n\\n")
+                        lesson_file.write(f"User: {prompt}\nPrototype: {response}\n\n")
                     self._send_json(200, {"ok": True, "saved": True, "message": "Lesson saved for a future training run; model weights have not changed yet."})
                     return
 
