@@ -67,7 +67,7 @@ class PrototypeRemoteMemoryTests(unittest.TestCase):
         self.assertEqual(mocked.call_count, 4)
         first_request = mocked.call_args_list[0].args[0]
         self.assertEqual(first_request.method, "POST")
-        self.assertNotIn("test-key", str(first_request.headers))
+        self.assertEqual(first_request.get_header("Authorization"), "Bearer test-key")
 
 
 if __name__ == "__main__":
