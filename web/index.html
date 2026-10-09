@@ -32,6 +32,23 @@
       <button type="submit">Send</button>
     </form>
   </div>
+  <div class="panel" id="learning-access">
+    <strong>Teach Prototype</strong>
+    <p>Enter your private learning password to add lessons. Code updates stay disabled during teaching sessions.</p>
+    <form id="learning-unlock-form">
+      <input id="learning-password" type="password" autocomplete="current-password" placeholder="Learning password" required>
+      <button type="submit">Unlock learning</button>
+    </form>
+    <div id="learning-status" role="status">Learning mode locked.</div>
+    <div id="learning-panel" hidden>
+      <form id="teaching-form" style="display:grid;gap:8px;margin-top:12px">
+        <label>Question or example <textarea id="teaching-prompt" rows="3" maxlength="2000" required style="width:100%;box-sizing:border-box"></textarea></label>
+        <label>Correct answer you want Prototype to learn <textarea id="teaching-answer" rows="3" maxlength="2000" required style="width:100%;box-sizing:border-box"></textarea></label>
+        <button type="submit">Save lesson</button>
+      </form>
+      <button id="learning-lock" type="button">Lock learning mode</button>
+    </div>
+  </div>
   <div class="panel"><strong>Runtime</strong><pre id="details">Loading…</pre></div>
   <script src="./runtime.js"></script>
   <script src="./app.js"></script>
@@ -61,6 +78,40 @@
           : "Nordic Hub: 🔴 offline";
     }, 1000);
     updateIdentityDetails();
+
+    let learningToken = "";
+    const unlockForm = document.getElementById("learning-unlock-form");
+    const learningPassword = document.getElementById("learning-password");
+    const learningStatus = document.getElementById("learning-status");
+    const learningPanel = document.getElementById("learning-panel");
+    unlockForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      learningStatus.textContent = "Checking password…";
+      try {
+        const response = await fetch("/learning/unlock", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({password:learningPassword.value})});
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Could not unlock learning mode");
+        learningToken = data.token;
+        learningPassword.value = "";
+        learningPanel.hidden = false;
+        learningStatus.textContent = "Learning mode unlocked for 30 minutes. Code editing is disabled.";
+      } catch (error) { learningStatus.textContent = error.message + " (Use the Python server, not the static GitHub Pages copy.)"; }
+    });
+    document.getElementById("teaching-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      try {
+        const response = await fetch("/learning/teach", {method:"POST", headers:{"Content-Type":"application/json","Authorization":"Bearer "+learningToken}, body:JSON.stringify({prompt:document.getElementById("teaching-prompt").value,answer:document.getElementById("teaching-answer").value})});
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Could not save lesson");
+        learningStatus.textContent = "Lesson saved to " + data.training_file + ". " + data.note;
+        document.getElementById("teaching-prompt").value = "";
+        document.getElementById("teaching-answer").value = "";
+      } catch (error) { learningStatus.textContent = error.message; }
+    });
+    document.getElementById("learning-lock").addEventListener("click", async () => {
+      try { await fetch("/learning/lock", {method:"POST", headers:{"Content-Type":"application/json","Authorization":"Bearer "+learningToken}, body:"{}"}); }
+      finally { learningToken = ""; learningPanel.hidden = true; learningStatus.textContent = "Learning mode locked. Code editing remains disabled."; }
+    });
 
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("./service-worker.js")
