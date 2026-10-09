@@ -261,7 +261,7 @@ async function handleChat(event) {
 
   try {
     const serverInput = document.getElementById("learning-server");
-    const serverUrl = serverInput ? serverInput.value.trim().replace(/\\/+$/, "") : "";
+    const serverUrl = serverInput ? serverInput.value.trim().replace(/\/+$/, "") : "";
     let reply;
     if (serverUrl) {
       const response = await fetch(serverUrl + "/chat", {
