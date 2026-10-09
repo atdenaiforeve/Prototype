@@ -133,7 +133,7 @@ class PrototypeChat:
         path = ROOT / "data" / "training" / "teacher_lessons.txt"
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("a", encoding="utf-8") as handle:
-            handle.write(f"Human: {prompt}\\nPrototype: {answer}\\n\\n")
+            handle.write(f"Human: {prompt}\nPrototype: {answer}\n\n")
         self.learning.memory.remember(
             f"Teaching example — Human: {prompt} | Prototype: {answer}",
             memory_type="correction", importance=0.9, confidence=1.0,
