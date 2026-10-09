@@ -157,6 +157,7 @@ class PrototypeRemoteMemory:
             return ""
         try:
             snapshot = self._memory_snapshot()
+            self.last_error = None
             core = self._items(snapshot.get("shared_core_memory"))
             branch = self._items(snapshot.get("branch_memory"))
             sections = [
