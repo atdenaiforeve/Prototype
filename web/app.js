@@ -12,6 +12,7 @@ const state = {
     name: localStorage.getItem("prototype_name") || "Prototype",
     peers: [],
     lastError: null,
+    lastMessageAt: 0,
     timer: null,
   },
 };
@@ -209,7 +210,14 @@ async function refreshNordicPeers() {
 async function sendToPrototype(targetInstanceId, message) {
   if (!state.hub.token) throw new Error("Nordic Hub is not registered");
 
-  return hubFetch("/instance-message", {
+  const now = Date.now();
+  const elapsed = now - state.hub.lastMessageAt;
+  if (state.hub.lastMessageAt && elapsed < state.cooldownMs) {
+    const waitSeconds = Math.ceil((state.cooldownMs - elapsed) / 1000);
+    throw new Error("Nordic Hub message cooldown: wait " + waitSeconds + " more second(s).");
+  }
+
+  const result = await hubFetch("/instance-message", {
     method: "POST",
     body: JSON.stringify({
       instance_id: prototypeId,
@@ -218,6 +226,9 @@ async function sendToPrototype(targetInstanceId, message) {
       message: String(message).slice(0, 8000),
     }),
   });
+
+  state.hub.lastMessageAt = Date.now();
+  return result;
 }
 
 async function connectNordic() {
