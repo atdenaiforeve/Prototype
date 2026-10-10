@@ -34,20 +34,11 @@
     </form>
   </div>
   <div class="panel">
-    <strong>Owner Learning Mode</strong>
-    <p>Enter the URL of the Prototype Python server and your private learning password. The password is sent only to that server; it is not saved in browser storage.</p>
-    <div class="learning-grid">
-      <label>Python server URL <input id="learning-server" type="url" placeholder="https://your-prototype-server"></label>
-      <label>Learning password <input id="learning-password" type="password" autocomplete="current-password" placeholder="Server-side password"></label>
-      <div class="learning-actions">
-        <button id="learning-unlock" type="button">Unlock learning mode</button>
-        <button id="learning-lock" type="button" disabled>End lesson &amp; save</button>
-      </div>
-      <label>What should Prototype learn? <textarea id="lesson-prompt" maxlength="8000" placeholder="Example: What is your role?"></textarea></label>
-      <label>Correct response <textarea id="lesson-response" maxlength="8000" placeholder="The answer you want Prototype to learn"></textarea></label>
-      <button id="lesson-save" type="button" disabled>Save lesson</button>
-      <div id="learning-status" role="status">Learning mode is locked.</div>
-    </div>
+    <strong>Model Server</strong>
+    <p>Optional: enter the URL of your running Prototype Python server to use the trained checkpoint. Leave blank to use the browser model.</p>
+    <label>Prototype server URL <input id="learning-server" type="url" placeholder="https://your-prototype-server"></label>
+    <button id="save-server" type="button">Save server URL</button>
+    <div id="server-status" role="status">Browser model selected.</div>
   </div>
   <div class="panel"><strong>Runtime</strong><pre id="details">Loading…</pre></div>
   <script src="./runtime.js"></script>
@@ -77,91 +68,53 @@
           ? "Nordic Hub: 🟢 connected — " + online + " other Prototype(s) online"
           : "Nordic Hub: 🔴 offline";
     }, 1000);
-    updateIdentityDetails();
 
-    // The learning password is never persisted. The short-lived session token
-    // exists only in this page's memory and is sent to the Python server.
-    const learningServer = document.getElementById("learning-server");
-    const learningPassword = document.getElementById("learning-password");
-    const learningStatus = document.getElementById("learning-status");
-    const learningUnlock = document.getElementById("learning-unlock");
-    const learningLock = document.getElementById("learning-lock");
-    const lessonSave = document.getElementById("lesson-save");
-    let learningSessionToken = "";
-    if (location.port === "8000") learningServer.value = location.origin;
+    const serverInput = document.getElementById("learning-server");
+    const serverStatus = document.getElementById("server-status");
+    const savedServer = localStorage.getItem("prototype_server_url") || "";
+    serverInput.value = savedServer || (location.port === "8000" ? location.origin : "");
 
-    function learningBaseUrl() {
-      return learningServer.value.trim().replace(/\/+$/, "");
+    function updateServerStatus() {
+      const url = serverInput.value.trim().replace(/\/+$/, "");
+      serverStatus.textContent = url
+        ? "Python model selected: " + url
+        : "Browser model selected.";
+      updateIdentityDetails();
     }
-    function showLearningStatus(message) {
-      learningStatus.textContent = message;
-    }
-    async function learningRequest(path, body, authenticated = false) {
-      const headers = { "Content-Type": "application/json" };
-      if (authenticated && learningSessionToken) {
-        headers.Authorization = "Bearer " + learningSessionToken;
+
+    document.getElementById("save-server").addEventListener("click", () => {
+      const url = serverInput.value.trim().replace(/\/+$/, "");
+      if (url) {
+        try {
+          const parsed = new URL(url);
+          if (!["http:", "https:"].includes(parsed.protocol)) throw new Error();
+        } catch {
+          serverStatus.textContent = "Enter a valid HTTP or HTTPS URL.";
+          return;
+        }
       }
-      const response = await fetch(learningBaseUrl() + path, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(body || {}),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || ("Server returned HTTP " + response.status));
-      return data;
-    }
-    learningUnlock.addEventListener("click", async () => {
-      if (!learningBaseUrl()) {
-        showLearningStatus("Enter the URL of the running Prototype Python server first.");
-        return;
-      }
-      learningUnlock.disabled = true;
-      try {
-        const data = await learningRequest("/learning/unlock", { password: learningPassword.value });
-        learningSessionToken = data.session_token;
-        state.learningModeActive = true;
-        updateIdentityDetails();
-        learningPassword.value = "";
-        learningLock.disabled = false;
-        lessonSave.disabled = false;
-        showLearningStatus("Learning mode unlocked for 30 minutes. Code updating is frozen.");
-      } catch (error) {
-        showLearningStatus("Could not unlock: " + error.message);
-      } finally {
-        learningUnlock.disabled = false;
-      }
+      localStorage.setItem("prototype_server_url", url);
+      serverInput.value = url;
+      updateServerStatus();
     });
-    learningLock.addEventListener("click", async () => {
-      try {
-        const data = await learningRequest("/learning/signoff", {}, true);
-        learningSessionToken = "";
-        state.learningModeActive = false;
-        updateIdentityDetails();
-        lessonSave.disabled = true;
-        learningLock.disabled = true;
-        showLearningStatus(data.message || "Teaching session ended and saved. You can now test recall in ordinary chat.");
-      } catch (error) {
-        showLearningStatus("Could not lock session: " + error.message);
-      }
-    });
-    lessonSave.addEventListener("click", async () => {
-      const prompt = document.getElementById("lesson-prompt").value.trim();
-      const response = document.getElementById("lesson-response").value.trim();
-      try {
-        const data = await learningRequest("/learning/teach", { prompt, response }, true);
-        showLearningStatus(data.message || "Lesson saved.");
-        document.getElementById("lesson-prompt").value = "";
-        document.getElementById("lesson-response").value = "";
-      } catch (error) {
-        showLearningStatus("Lesson not saved: " + error.message);
-      }
-    });
+    serverInput.addEventListener("change", updateServerStatus);
+    updateServerStatus();
 
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("./service-worker.js")
-        .then(() => console.log("Prototype offline cache ready"))
-        .catch((error) => console.warn("Offline cache unavailable:", error));
+        .then(registration => {
+          console.log("Prototype offline cache ready");
+          registration.update().catch(() => {});
+          setInterval(() => registration.update().catch(() => {}), 60_000);
+        })
+        .catch(error => console.warn("Offline cache unavailable:", error));
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (refreshing) return;
+        refreshing = true;
+        location.reload();
+      });
     }
-  </script>
+  </script>t>
 </body>
 </html>
