@@ -1,7 +1,6 @@
 const state = {
   conversation: [],
   serverConversationId: "",
-  learningModeActive: false,
   autonomousTimer: null,
   cooldownMs: 10_000,
   hub: {
@@ -272,8 +271,7 @@ async function handleChat(event) {
   saveConversation();
 
   try {
-    const serverInput = document.getElementById("learning-server");
-    const serverUrl = serverInput ? serverInput.value.trim().replace(/\/+$/, "") : "";
+    const serverUrl = (localStorage.getItem("prototype_server_url") || "").trim().replace(/\/+$/, "");
     let reply;
     if (serverUrl) {
       const response = await fetch(serverUrl + "/chat", {
@@ -282,21 +280,12 @@ async function handleChat(event) {
         body: JSON.stringify({
           message: text,
           conversation_id: state.serverConversationId || undefined,
-          learning_session_token: learningSessionToken || undefined,
         }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || ("Python server returned HTTP " + response.status));
       reply = data.reply;
       state.serverConversationId = data.conversation_id || state.serverConversationId;
-      if (data.lesson_ended) {
-        learningSessionToken = "";
-        state.learningModeActive = false;
-        updateIdentityDetails();
-        lessonSave.disabled = true;
-        learningLock.disabled = true;
-        showLearningStatus(data.reply || "Teaching session ended and saved. You can now test recall in ordinary chat.");
-      }
       if (typeof reply !== "string" || !reply.trim()) throw new Error("Python model returned an empty reply");
     } else {
       reply = await window.PrototypeRuntime.generate(text, state.conversation);
@@ -304,13 +293,13 @@ async function handleChat(event) {
     state.conversation.push({ role: "assistant", content: reply });
     addMessage("Prototype", reply, "prototype");
     saveConversation();
-    const usingPython = Boolean(document.getElementById("learning-server")?.value.trim());
+    const usingPython = Boolean(localStorage.getItem("prototype_server_url")?.trim());
     setStatus(
       usingPython
         ? (state.hub.connected ? "Prototype Python model ready — Nordic Hub connected" : "Prototype Python model ready")
         : (state.hub.connected ? "Prototype browser runtime ready — Nordic Hub connected" : "Prototype browser runtime ready")
     );
-    if (!document.getElementById("learning-server")?.value.trim()) startAutonomousLoop();
+    if (!localStorage.getItem("prototype_server_url")?.trim()) startAutonomousLoop();
   } catch (error) {
     console.error(error);
     const reply =
@@ -353,7 +342,7 @@ function updateIdentityDetails() {
 
   els.details.textContent = JSON.stringify(
     {
-      runtime: document.getElementById("learning-server")?.value.trim() ? "Python server / trained checkpoint" : "browser",
+      runtime: localStorage.getItem("prototype_server_url")?.trim() ? "Python server / trained checkpoint" : "browser",
       prototype_id: prototypeId,
       prototype_name: getPrototypeName(),
       identity_saved: true,
@@ -365,12 +354,12 @@ function updateIdentityDetails() {
         last_error: state.hub.lastError,
       },
       original_id_known: Boolean(originalId),
-      code_editor: state.learningModeActive ? "locked during owner learning mode" : (isOriginal ? "enabled" : "locked"),
+      code_editor: isOriginal ? "enabled" : "locked",
       autonomous_cooldown_seconds: 10,
       ai_to_ai_cooldown_seconds: 10,
       external_ai_connection: false,
       mcp_required_for_chat: false,
-      server_connection: Boolean(document.getElementById("learning-server")?.value.trim()),
+      server_connection: Boolean(localStorage.getItem("prototype_server_url")?.trim()),
       codespaces_required_for_chat: false,
       model_runtime: window.PrototypeRuntime.name,
       model_status: window.PrototypeRuntime.status(),
