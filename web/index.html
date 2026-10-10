@@ -100,6 +100,44 @@
     serverInput.addEventListener("change", updateServerStatus);
     updateServerStatus();
 
+    // Poll the published app assets so changes to Prototype's code refresh
+    // the page even when the service-worker file itself did not change.
+    const appAssets = ["./index.html", "./app.js", "./runtime.js", "./service-worker.js"];
+    async function readAssetSignatures() {
+      const entries = await Promise.all(appAssets.map(async path => {
+        try {
+          const response = await fetch(path, { cache: "no-store" });
+          return [path, response.ok ? await response.text() : ""];
+        } catch {
+          return [path, ""];
+        }
+      }));
+      return JSON.stringify(entries);
+    }
+    let lastAssetSignature = "";
+    readAssetSignatures().then(signature => { lastAssetSignature = signature; });
+    setInterval(async () => {
+      const signature = await readAssetSignatures();
+      if (!lastAssetSignature) {
+        lastAssetSignature = signature;
+        return;
+      }
+      if (signature && signature !== lastAssetSignature) {
+        const messageInput = document.getElementById("message");
+        if (document.activeElement === messageInput || messageInput.value.trim()) {
+          return;
+        }
+        sessionStorage.setItem("prototype_draft", messageInput.value);
+        location.reload();
+      }
+    }, 60_000);
+
+    const draft = sessionStorage.getItem("prototype_draft");
+    if (draft !== null) {
+      document.getElementById("message").value = draft;
+      sessionStorage.removeItem("prototype_draft");
+    }
+
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("./service-worker.js")
         .then(registration => {
