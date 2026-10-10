@@ -190,7 +190,9 @@ export default {
        */
       if (
         url.pathname !== "/pull" &&
-        url.pathname !== "/instance-heartbeat"
+        url.pathname !== "/instance-heartbeat" &&
+        url.pathname !== "/peers" &&
+        url.pathname !== "/instance-message"
       ) {
         return unauthorized();
       }
