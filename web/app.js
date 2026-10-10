@@ -356,7 +356,7 @@ function updateIdentityDetails() {
       original_id_known: Boolean(originalId),
       code_editor: state.learningModeActive ? "locked during owner learning mode" : (isOriginal ? "enabled" : "locked"),
       autonomous_cooldown_seconds: 10,
-      ai_to_ai_cooldown_seconds: 0,
+      ai_to_ai_cooldown_seconds: 10,
       external_ai_connection: false,
       mcp_required_for_chat: false,
       server_connection: Boolean(document.getElementById("learning-server")?.value.trim()),
