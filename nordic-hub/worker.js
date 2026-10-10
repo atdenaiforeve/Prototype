@@ -1217,14 +1217,28 @@ export class NordicRegistry {
         return json({ error: "Message too long" }, 413);
       }
 
+      // Enforce a 10-second outbound message cooldown per sender,
+      // even if the sender bypasses the website's client-side code.
+      const now = Date.now();
+      const lastMessageAt = Number(sender.last_instance_message_at || 0);
+      const elapsed = now - lastMessageAt;
+      if (elapsed < 10_000) {
+        return json({
+          error: "Message cooldown active",
+          retry_after_seconds: Math.ceil((10_000 - elapsed) / 1000)
+        }, 429);
+      }
+
       const queue = queues[targetId] || [];
       queue.push({
         id: crypto.randomUUID(),
         sender: sender.name,
         sender_instance_id: sender.instance_id,
         message,
-        created_at: new Date().toISOString()
+        created_at: new Date(now).toISOString()
       });
+      sender.last_instance_message_at = now;
+      await this.state.storage.put("identities", identities);
 
       queues[targetId] = queue.slice(-100);
       await this.state.storage.put("queues", queues);
