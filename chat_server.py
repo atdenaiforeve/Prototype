@@ -383,7 +383,11 @@ class PrototypeChat:
                     history = self.conversations[conversation_id]
                     history.append({"role": "assistant", "content": reply})
                     self.conversations[conversation_id] = history[-20:]
-                    self.autonomous_outbox.setdefault(conversation_id, []).append(reply)
+                    outbox = self.autonomous_outbox.setdefault(conversation_id, [])
+                    outbox.append(reply)
+                    # If the browser is closed for a long time, keep only a
+                    # bounded backlog for the next time it reconnects.
+                    self.autonomous_outbox[conversation_id] = outbox[-100:]
                 self.remote_memory.remember(f"Prototype autonomous message: {reply}")
             except Exception as exc:
                 print(f"[Prototype] autonomous message failed: {exc}")
