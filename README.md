@@ -252,3 +252,9 @@ The communication layer has message-size and timeout limits and does not forward
 Before enabling or expanding autonomous self-modification, the current codebase should be audited, tested, and frozen. The goal is to finish the planned foundation first so behavior can be tested without continually changing the underlying system.
 
 A future wake-on-message design may allow an incoming conversation to activate Prototype when its main runtime is not already running. That is not implemented yet.
+
+## Self-originating behavioural development
+
+Prototype does not start with a prescribed personality or trait list. During normal and autonomous replies, `personality_growth.py` records Prototype's own outputs in `personality_profile.json`, keeps a bounded recent history, and computes recurring wording and simple response-pattern measurements from that history. The resulting observations are passed back as descriptive context on later turns; they are not target traits and can change as his outputs change. The profile is also exposed in `/status` for inspection.
+
+This is an experimental behavioural feedback loop, not evidence of consciousness and not an update to neural model weights. It can influence the style of later outputs through context, but does not by itself retrain the model. The profile file can be deleted to reset these observations.
