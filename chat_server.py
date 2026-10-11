@@ -253,8 +253,9 @@ class PrototypeChat:
         initial_output = result.output.strip()
         model_search_failed = False
         search_match = re.search(r"<SEARCH_QUERY>\s*(.*?)\s*</SEARCH_QUERY>", initial_output, flags=re.IGNORECASE | re.DOTALL)
-        if search_match and not web_results:
-            requested_query = search_match.group(1).strip()[:300]
+        needs_fallback_search = "i don't know the answer to that yet" in initial_output.lower()
+        if (search_match or needs_fallback_search) and not web_results:
+            requested_query = (search_match.group(1).strip() if search_match else message)[:300]
             if requested_query:
                 try:
                     web_results = search_web(requested_query, max_results=5)
