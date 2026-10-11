@@ -106,6 +106,10 @@ def should_search(message: str) -> bool:
     )
     if any(term in text for term in explicit + freshness):
         return True
+    # Give Prototype a reliable fallback for questions its small model may not know,
+    # including simple factual questions. Search results remain evidence, not truth.
+    if "?" in text and len(text.replace("?", "").strip()) >= 4:
+        return True
     # Questions about changing real-world facts are more likely to need fresh evidence.
     return any(word in text for word in (
         "weather", "release date", "update notes", "exchange rate",
