@@ -244,6 +244,10 @@ class PrototypeChat:
         elif web_search_error:
             prompt += "\n\nInternet search was attempted but failed. Do not pretend you searched successfully or invent current facts."
         prompt += ("If you need external or current information, you may request a search by outputting exactly <SEARCH_QUERY>short search terms</SEARCH_QUERY>. Use this only when outside evidence is needed; otherwise answer normally.\n\n")
+        # The trained model has a short context window. Put one compact page excerpt
+        # immediately before the question so it survives inference-time truncation.
+        if web_pages:
+            prompt += "Compact live-web evidence:\n" + format_web_pages(web_pages[:1]) + "\n\n"
         prompt += f"User: {message}\nPrototype:"
 
         result = reason_generate(
