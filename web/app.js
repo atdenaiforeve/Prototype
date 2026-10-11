@@ -1,6 +1,7 @@
 const state = {
   conversation: [],
-  serverConversationId: "",
+  serverConversationId: localStorage.getItem("prototype_server_conversation_id") || "",
+  seenHubMessages: new Set(JSON.parse(localStorage.getItem("prototype_seen_hub_messages") || "[]")),
   autonomousTimer: null,
   cooldownMs: 10_000,
   lastHumanMessageAt: 0,
@@ -25,6 +26,10 @@ const els = {
   input: document.getElementById("message"),
 };
 
+const MAX_VISIBLE_MESSAGES = 100;
+const MAX_SAVED_MESSAGES = 100;
+const MAX_SEEN_HUB_MESSAGES = 500;
+
 function addMessage(role, text, cls) {
   const d = document.createElement("div");
   d.className = "msg " + cls;
@@ -33,6 +38,9 @@ function addMessage(role, text, cls) {
   const label = role === "Prototype" || role === "Assistant" ? "AI" : role;
   d.textContent = label + ": " + cleanText;
   els.messages.appendChild(d);
+  while (els.messages.children.length > MAX_VISIBLE_MESSAGES) {
+    els.messages.removeChild(els.messages.firstElementChild);
+  }
   els.messages.scrollTop = els.messages.scrollHeight;
 }
 
@@ -43,7 +51,7 @@ function setStatus(text) {
 function saveConversation() {
   localStorage.setItem(
     "prototype_conversation",
-    JSON.stringify(state.conversation.slice(-50))
+    JSON.stringify(state.conversation.slice(-MAX_SAVED_MESSAGES))
   );
 }
 
@@ -53,7 +61,7 @@ function loadConversation() {
       localStorage.getItem("prototype_conversation") || "[]"
     );
     if (Array.isArray(saved)) {
-      state.conversation = saved;
+      state.conversation = saved.slice(-MAX_SAVED_MESSAGES);
       for (const item of saved) {
         addMessage(
           item.role === "user" ? "You" : "Prototype",
@@ -168,19 +176,33 @@ async function pullNordicMessages() {
     state.hub.connected = true;
     state.hub.lastError = null;
 
+    let addedAny = false;
     for (const item of data.messages || []) {
       const sender = item.sender || "Prototype";
       const text = item.message || "";
       if (!text) continue;
+
+      // Hub pulls may include a message more than once. Prefer its stable ID;
+      // otherwise use the provider timestamp with sender and text.
+      const stableId = item.id || item.message_id || item.messageId;
+      const timestamp = item.timestamp_ms || item.timestamp || item.created_at || item.createdAt || "";
+      const dedupeKey = String(stableId || (sender + "\\u0000" + text + "\\u0000" + timestamp));
+      if (state.seenHubMessages.has(dedupeKey)) continue;
+      state.seenHubMessages.add(dedupeKey);
 
       state.conversation.push({
         role: "assistant",
         content: sender + ": " + text,
       });
       addMessage(sender, text, "prototype");
+      addedAny = true;
     }
 
-    if ((data.messages || []).length) saveConversation();
+    while (state.seenHubMessages.size > MAX_SEEN_HUB_MESSAGES) {
+      state.seenHubMessages.delete(state.seenHubMessages.values().next().value);
+    }
+    localStorage.setItem("prototype_seen_hub_messages", JSON.stringify([...state.seenHubMessages]));
+    if (addedAny) saveConversation();
   } catch (error) {
     state.hub.connected = false;
     state.hub.lastError = error.message;
@@ -299,6 +321,9 @@ async function handleChat(event) {
       if (!response.ok) throw new Error(data.error || ("Python server returned HTTP " + response.status));
       reply = data.reply;
       state.serverConversationId = data.conversation_id || state.serverConversationId;
+      if (state.serverConversationId) {
+        localStorage.setItem("prototype_server_conversation_id", state.serverConversationId);
+      }
       if (typeof reply !== "string" || !reply.trim()) throw new Error("Python model returned an empty reply");
     } else {
       reply = await window.PrototypeRuntime.generate(text, state.conversation);
@@ -384,3 +409,8 @@ loadConversation();
 setStatus("Prototype browser runtime ready");
 updateIdentityDetails();
 connectNordic();
+// Timers stop when the page is closed. Resume the browser-model conversation
+// after reopening, using the saved transcript rather than creating a new chat.
+if (state.conversation.length && !localStorage.getItem("prototype_server_url")?.trim()) {
+  startAutonomousLoop();
+}
