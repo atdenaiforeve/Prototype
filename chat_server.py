@@ -305,7 +305,7 @@ class PrototypeChat:
             "reply": reply,
             "workspace": result.workspace,
             "web_search": {
-                "attempted": should_search(message) or bool(search_match),
+                "attempted": should_search(message) or bool(search_match) or needs_fallback_search,
                 "used": bool(web_results),
                 "result_count": len(web_results),
                 "sources": [{"title": item["title"], "url": item["url"]} for item in web_results],
