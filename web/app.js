@@ -63,7 +63,7 @@ function loadConversation() {
     );
     if (Array.isArray(saved)) {
       state.conversation = saved.slice(-MAX_SAVED_MESSAGES);
-      for (const item of saved) {
+      for (const item of state.conversation) {
         addMessage(
           item.role === "user" ? "You" : "Prototype",
           item.content,
