@@ -1,6 +1,8 @@
 const state = {
   conversation: [],
   serverConversationId: localStorage.getItem("prototype_server_conversation_id") || "",
+  serverAutonomousTimer: null,
+  serverAutonomousBusy: false,
   seenHubMessages: new Set(JSON.parse(localStorage.getItem("prototype_seen_hub_messages") || "[]")),
   autonomousTimer: null,
   cooldownMs: 10_000,
@@ -350,6 +352,41 @@ async function handleChat(event) {
   }
 }
 
+async function pollServerAutonomousMessages() {
+  const serverUrl = (localStorage.getItem("prototype_server_url") || "").trim().replace(/\\/+$/, "");
+  const conversationId = state.serverConversationId;
+  if (!serverUrl || !conversationId || state.serverAutonomousBusy) return;
+
+  state.serverAutonomousBusy = true;
+  try {
+    const response = await fetch(
+      serverUrl + "/autonomous/messages?conversation_id=" + encodeURIComponent(conversationId),
+      { cache: "no-store" }
+    );
+    if (!response.ok) return;
+    const data = await response.json().catch(() => ({}));
+    const messages = Array.isArray(data.messages) ? data.messages : [];
+    for (const message of messages) {
+      const text = typeof message === "string" ? message : String(message?.message || "");
+      if (!text.trim()) continue;
+      state.conversation.push({ role: "assistant", content: text });
+      addMessage("Prototype", text, "prototype");
+    }
+    if (messages.length) saveConversation();
+  } catch (error) {
+    // A temporarily offline server should not stop the chat from reopening.
+    console.warn("Autonomous message check failed:", error);
+  } finally {
+    state.serverAutonomousBusy = false;
+  }
+}
+
+function startServerAutonomousPolling() {
+  if (state.serverAutonomousTimer !== null) return;
+  state.serverAutonomousTimer = setInterval(pollServerAutonomousMessages, 3000);
+  pollServerAutonomousMessages();
+}
+
 function startAutonomousLoop() {
   if (state.autonomousTimer !== null) return;
 
@@ -412,6 +449,8 @@ updateIdentityDetails();
 connectNordic();
 // Timers stop when the page is closed. Resume the browser-model conversation
 // after reopening, using the saved transcript rather than creating a new chat.
-if (state.conversation.length && !localStorage.getItem("prototype_server_url")?.trim()) {
+if (localStorage.getItem("prototype_server_url")?.trim()) {
+  startServerAutonomousPolling();
+} else if (state.conversation.length) {
   startAutonomousLoop();
 }
