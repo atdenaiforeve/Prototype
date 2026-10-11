@@ -79,7 +79,7 @@ The server binds to `0.0.0.0:8000` so a forwarded Codespaces port can be reached
 
 The server keeps a short conversation history in memory and sends each message through Prototype's reasoning and memory systems. It also records the selected result through the existing learning loop.
 
-Generation has no application-level wall-clock deadline: a response is allowed to finish rather than being cancelled after a fixed number of seconds. Output length is still bounded to avoid runaway generation; the default is 768 new tokens. To change that limit, set the server-side environment variable `PROTOTYPE_MAX_NEW_TOKENS` to a positive integer before starting the server. Very large values can consume substantial time and memory. The chat defaults use five candidate responses, temperature 0.7, and top-k 40 as an inference-time quality adjustment; these settings do not replace training a stronger model.
+Generation has no application-level wall-clock deadline: a response is allowed to finish rather than being cancelled after a fixed number of seconds. Output length is still bounded to avoid runaway generation; the default is 1,024 new tokens. To change that limit, set the server-side environment variable `PROTOTYPE_MAX_NEW_TOKENS` to a positive integer before starting the server. Very large values can consume substantial time and memory. The chat defaults use five candidate responses, temperature 0.7, and top-k 40 as an inference-time quality adjustment; these settings do not replace training a stronger model.
 
 ## Prototype Network shared and branch memory
 
