@@ -10,7 +10,7 @@ const state = {
     connected: false,
     registered: false,
     token: localStorage.getItem("prototype_instance_token") || "",
-    name: localStorage.getItem("prototype_name") || "Prototype",
+    name: "AI",
     peers: [],
     lastError: null,
     lastMessageAt: 0,
@@ -29,7 +29,10 @@ const els = {
 function addMessage(role, text, cls) {
   const d = document.createElement("div");
   d.className = "msg " + cls;
-  d.textContent = role + ": " + text;
+  // Hide repetitive model-name prefixes so replies read like normal conversation.
+  const cleanText = String(text ?? "").replace(/^(?:(?:Prototype|Assistant|AI|User|Human)\s*:\s*)+/i, "");
+  const label = role === "Prototype" || role === "Assistant" ? "AI" : role;
+  d.textContent = label + ": " + cleanText;
   els.messages.appendChild(d);
   els.messages.scrollTop = els.messages.scrollHeight;
 }
@@ -78,13 +81,13 @@ function getPrototypeId() {
 const prototypeId = getPrototypeId();
 
 function getPrototypeName() {
-  return (localStorage.getItem("prototype_name") || "Prototype").trim() || "Prototype";
+  return "AI";
 }
 
 function savePrototypeName(name) {
   const clean = String(name || "").trim().slice(0, 64) || "Prototype";
-  localStorage.setItem("prototype_name", clean);
-  state.hub.name = clean;
+  localStorage.setItem("prototype_name", "AI");
+  state.hub.name = "AI";
 }
 
 async function hubFetch(path, options = {}) {
@@ -368,7 +371,7 @@ function updateIdentityDetails() {
     {
       runtime: localStorage.getItem("prototype_server_url")?.trim() ? "Python server / trained checkpoint" : "browser",
       prototype_id: prototypeId,
-      prototype_name: getPrototypeName(),
+      display_label: "AI",
       identity_saved: true,
       nordic_hub: {
         connected: state.hub.connected,
