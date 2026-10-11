@@ -1,7 +1,7 @@
 // Browser-native Prototype runtime.
 // This is a small corpus-based browser engine, not the trained Python Transformer.
 const FILES = [
-  "ai.txt", "basics.txt", "computers_programming.txt", "context.txt",
+  "ai.txt", "anti_garble.txt", "basics.txt", "computers_programming.txt", "context.txt",
   "conversation.txt", "conversation_instructions.txt", "conversation_skills.txt",
   "earth.txt", "english_basics.txt", "factual_reasoning.txt", "humans.txt",
   "language.txt", "logic_reasoning.txt", "mathematics.txt", "matter_energy.txt",
@@ -105,6 +105,15 @@ const Runtime = {
       if (pick <= 0) return word;
     }
     return options[0][0];
+  },
+
+  quickReply(prompt) {
+    const text = this.normalize(prompt);
+    if (/^(hi|hello|hey|hiya|sup|yo)( prototype)?$/.test(text)) return "Hi! I'm here. What would you like to work on?";
+    if (/^(you good|are you good|are you okay|you ok|are you alright|how are you)$/.test(text)) return "I'm running and ready to chat. What are we working on?";
+    if (/^(are you there|prototype are you there)$/.test(text)) return "Yes, I'm here and ready to respond.";
+    if (/^(thanks|thank you|cheers)$/.test(text)) return "You're welcome!";
+    return null;
   },
 
   retrieveAnswer(prompt) {
