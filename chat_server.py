@@ -606,6 +606,7 @@ def make_handler(chat: PrototypeChat):
                     "message": "Prototype Python server is running.",
                     "api": {
                         "chat": "POST /chat",
+                        "live_browser": "POST /browser/action (open/read/click/scroll public pages)",
                         "autonomous_messages": "GET /autonomous/messages?conversation_id=...",
                         "experience": "GET /experience/status + POST /experience/think-step",
                         "ai_communication": "POST /ai/message + POST /communicate",
@@ -674,6 +675,7 @@ def make_handler(chat: PrototypeChat):
             parsed = urlparse(self.path)
             allowed = {
                 "/chat",
+                "/browser/action",
                 "/experience/step",
                 "/experience/think-step",
                 "/communicate",
@@ -803,6 +805,32 @@ def make_handler(chat: PrototypeChat):
                     from self_update import GitHubSelfUpdater
                     GitHubSelfUpdater.freeze()
                     self._send_json(423, {"error": "Code updates are disabled while learning mode is active"})
+                    return
+
+                if parsed.path == "/browser/action":
+                    from browser_tool import browser_action
+                    action = body.get("action", "read")
+                    url = body.get("url", "")
+                    target = body.get("target", "")
+                    if not isinstance(action, str) or not isinstance(url, str) or not isinstance(target, str):
+                        self._send_json(400, {"error": "action, url, and target must be strings"})
+                        return
+                    if not url.strip():
+                        self._send_json(400, {"error": "url is required"})
+                        return
+                    try:
+                        result = browser_action(action, url, target=target)
+                    except RuntimeError as exc:
+                        self._send_json(503, {"error": str(exc)})
+                        return
+                    except ValueError as exc:
+                        self._send_json(400, {"error": str(exc)})
+                        return
+                    except Exception as exc:
+                        print(f"[Prototype] live browser action failed: {str(exc)[:180]}")
+                        self._send_json(502, {"error": "Browser action failed or the page blocked automated access"})
+                        return
+                    self._send_json(200, result)
                     return
 
                 if parsed.path == "/chat":
