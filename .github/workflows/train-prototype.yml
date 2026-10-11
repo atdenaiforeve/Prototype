@@ -1,0 +1,57 @@
+name: Train Prototype
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "data/training/**"
+      - "train.py"
+      - "train_model.py"
+      - "verify_training.py"
+      - "model.py"
+      - "tokenizer.py"
+      - "requirements.txt"
+      - ".github/workflows/train-prototype.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prototype-training
+  cancel-in-progress: false
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Check out Prototype
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install training dependencies
+        run: python -m pip install --upgrade pip && python -m pip install -r requirements.txt
+
+      - name: Train on the complete curriculum
+        run: python train.py --epochs 20 --batch-size 32
+
+      - name: Verify the trained checkpoint
+        run: python verify_training.py
+
+      - name: Upload trained model and vocabulary
+        uses: actions/upload-artifact@v4
+        with:
+          name: prototype-trained-model
+          path: |
+            prototype_model.pt
+            vocabulary.json
+            data/cache/training_tokens.json
+          if-no-files-found: error
+          retention-days: 14
