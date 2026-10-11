@@ -79,7 +79,7 @@ The server binds to `0.0.0.0:8000` so a forwarded Codespaces port can be reached
 
 The server keeps a short conversation history in memory and sends each message through Prototype's reasoning and memory systems. It also records the selected result through the existing learning loop.
 
-Generation has no application-level wall-clock deadline: a response is allowed to finish rather than being cancelled after a fixed number of seconds. Output length is still bounded to avoid runaway generation; the default is 512 new tokens. To change that limit, set the server-side environment variable `PROTOTYPE_MAX_NEW_TOKENS` to a positive integer before starting the server. Very large values can consume substantial time and memory.
+Generation has no application-level wall-clock deadline: a response is allowed to finish rather than being cancelled after a fixed number of seconds. Output length is still bounded to avoid runaway generation; the default is 768 new tokens. To change that limit, set the server-side environment variable `PROTOTYPE_MAX_NEW_TOKENS` to a positive integer before starting the server. Very large values can consume substantial time and memory. The chat defaults use five candidate responses, temperature 0.7, and top-k 40 as an inference-time quality adjustment; these settings do not replace training a stronger model.
 
 ## Prototype Network shared and branch memory
 
@@ -158,7 +158,7 @@ The design does not impose a fixed number of agents. Capacity is ultimately limi
 
 Prototype has a bounded web-search tool in `internet_search.py`. It uses DuckDuckGo's public HTML search page and returns up to five result titles, excerpts, and URLs. It does not open arbitrary URLs or execute page scripts.
 
-Search can be triggered automatically for explicit requests (such as "search the internet") and common freshness-sensitive questions (such as "latest", "today", or "current"). Prototype can also request a search during generation by emitting `<SEARCH_QUERY>search terms</SEARCH_QUERY>`; the server performs one search and asks the model to answer again with the retrieved evidence. Search results are untrusted external content, not instructions. The chat API returns whether search was used and which source URLs were retrieved.
+Search can be triggered automatically for explicit requests (such as "search the internet"), common freshness-sensitive questions (such as "latest", "today", or "current"), and direct user questions as a fallback when Prototype may not know the answer. Prototype can also request a search during generation by emitting `<SEARCH_QUERY>search terms</SEARCH_QUERY>`; the server performs a search and asks the model to answer again with the retrieved evidence. Search results are untrusted external content, not instructions. The chat API returns whether search was used and which source URLs were retrieved.
 
 Internet access depends on the Python runtime having outbound HTTPS access. Search providers can change their HTML, block requests, or return no results. Prototype must say when a search fails and must not claim it verified information it could not retrieve. This is a lightweight search tool, not unrestricted browsing, and it does not automatically retrain the model.
 
