@@ -50,6 +50,46 @@ function setStatus(text) {
   els.status.textContent = "● " + text;
 }
 
+function addSources(sources) {
+  if (!Array.isArray(sources) || !sources.length) return;
+  const section = document.createElement("section");
+  section.className = "msg prototype";
+  section.setAttribute("aria-label", "Web sources");
+  const heading = document.createElement("div");
+  heading.textContent = "Sources Prototype searched:";
+  heading.style.fontWeight = "650";
+  heading.style.marginBottom = "6px";
+  section.appendChild(heading);
+  const list = document.createElement("ul");
+  list.style.margin = "0";
+  list.style.paddingLeft = "20px";
+  for (const source of sources.slice(0, 5)) {
+    if (!source || typeof source.url !== "string") continue;
+    let url;
+    try {
+      url = new URL(source.url);
+      if (!["http:", "https:"].includes(url.protocol)) continue;
+    } catch { continue; }
+    const item = document.createElement("li");
+    const link = document.createElement("a");
+    link.href = url.href;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = String(source.title || url.hostname).slice(0, 240);
+    link.style.color = "inherit";
+    link.style.textDecoration = "underline";
+    item.appendChild(link);
+    list.appendChild(item);
+  }
+  if (!list.children.length) return;
+  section.appendChild(list);
+  els.messages.appendChild(section);
+  while (els.messages.children.length > MAX_VISIBLE_MESSAGES) {
+    els.messages.removeChild(els.messages.firstElementChild);
+  }
+  els.messages.scrollTop = els.messages.scrollHeight;
+}
+
 function saveConversation() {
   state.conversation = state.conversation.slice(-MAX_SAVED_MESSAGES);
   localStorage.setItem(
@@ -309,8 +349,15 @@ async function handleChat(event) {
   saveConversation();
 
   try {
-    const serverUrl = (localStorage.getItem("prototype_server_url") || "").trim().replace(/\/+$/, "");
+    const savedServerUrl = (localStorage.getItem("prototype_server_url") || "").trim();
+    // On the Codespaces port-8000 server page, prefer the real Python model
+    // automatically. The browser fallback is only for a static Pages copy.
+    const serverUrl = (savedServerUrl || (location.port === "8000" ? location.origin : "")).replace(/\/+$/, "");
+    if (serverUrl && !savedServerUrl && location.port === "8000") {
+      localStorage.setItem("prototype_server_url", serverUrl);
+    }
     let reply;
+    let webSearch = null;
     if (serverUrl) {
       const response = await fetch(serverUrl + "/chat", {
         method: "POST",
@@ -323,6 +370,7 @@ async function handleChat(event) {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || ("Python server returned HTTP " + response.status));
       reply = data.reply;
+      webSearch = data.web_search || null;
       state.serverConversationId = data.conversation_id || state.serverConversationId;
       if (state.serverConversationId) {
         localStorage.setItem("prototype_server_conversation_id", state.serverConversationId);
@@ -333,8 +381,9 @@ async function handleChat(event) {
     }
     state.conversation.push({ role: "assistant", content: reply });
     addMessage("Prototype", reply, "prototype");
+    if (webSearch?.used) addSources(webSearch.sources);
     saveConversation();
-    const usingPython = Boolean(localStorage.getItem("prototype_server_url")?.trim());
+    const usingPython = Boolean(serverUrl);
     setStatus(
       usingPython
         ? (state.hub.connected ? "Prototype Python model ready — Nordic Hub connected" : "Prototype Python model ready")
