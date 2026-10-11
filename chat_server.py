@@ -52,7 +52,7 @@ class PrototypeChat:
         tokenizer: Path | str = DEFAULT_TOKENIZER,
         *,
         candidates: int = 3,
-        max_new_tokens: int = 64,
+        max_new_tokens: int = 512,
         temperature: float = 0.8,
         top_k: int = 20,
         memory_limit: int = 5,
