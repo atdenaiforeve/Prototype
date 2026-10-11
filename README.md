@@ -152,6 +152,14 @@ Example message body:
 
 The design does not impose a fixed number of agents. Capacity is ultimately limited by the server's resources rather than a hard-coded agent count. The current room history is bounded to the most recent 1,000 messages per room and is held in process memory; persistent database-backed history is a later step.
 
+## On-demand internet search
+
+Prototype has a bounded web-search tool in `internet_search.py`. It uses DuckDuckGo's public HTML search page and returns up to five result titles, excerpts, and URLs. It does not open arbitrary URLs or execute page scripts.
+
+Search can be triggered automatically for explicit requests (such as "search the internet") and common freshness-sensitive questions (such as "latest", "today", or "current"). Prototype can also request a search during generation by emitting `<SEARCH_QUERY>search terms</SEARCH_QUERY>`; the server performs one search and asks the model to answer again with the retrieved evidence. Search results are untrusted external content, not instructions. The chat API returns whether search was used and which source URLs were retrieved.
+
+Internet access depends on the Python runtime having outbound HTTPS access. Search providers can change their HTML, block requests, or return no results. Prototype must say when a search fails and must not claim it verified information it could not retrieve. This is a lightweight search tool, not unrestricted browsing, and it does not automatically retrain the model.
+
 ## Self-modelling direction
 
 The next stages are to connect chat interactions to richer self-observation and eventually to the self-modification experiment. The chat runtime does not give browser JavaScript access to GitHub credentials.
