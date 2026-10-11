@@ -3,6 +3,8 @@ const state = {
   serverConversationId: "",
   autonomousTimer: null,
   cooldownMs: 10_000,
+  lastHumanMessageAt: 0,
+  autonomousBusy: false,
   hub: {
     url: "https://nordic-hub.pagey101212.workers.dev",
     connected: false,
@@ -265,6 +267,15 @@ async function handleChat(event) {
   const text = els.input.value.trim();
   if (!text) return;
 
+  // Enforce the 10-second human-to-Prototype message interval in the UI.
+  const now = Date.now();
+  const elapsed = now - state.lastHumanMessageAt;
+  if (state.lastHumanMessageAt && elapsed < state.cooldownMs) {
+    const waitSeconds = Math.ceil((state.cooldownMs - elapsed) / 1000);
+    setStatus("Message cooldown — wait " + waitSeconds + " second(s) before sending again");
+    return;
+  }
+  state.lastHumanMessageAt = now;
   els.input.value = "";
   state.conversation.push({ role: "user", content: text });
   addMessage("You", text, "user");
@@ -314,25 +325,38 @@ async function handleChat(event) {
 function startAutonomousLoop() {
   if (state.autonomousTimer !== null) return;
 
-  state.autonomousTimer = setInterval(async () => {
-    if (!state.conversation.length) return;
+  // Schedule the next AI-to-human message only after the previous generation
+  // finishes, so slow generation cannot create overlapping replies.
+  const scheduleNext = () => {
+    state.autonomousTimer = setTimeout(async () => {
+      if (!state.conversation.length || state.autonomousBusy) {
+        scheduleNext();
+        return;
+      }
 
-    try {
-      const reply = await window.PrototypeRuntime.autonomous(
-        state.conversation
-      );
-      if (!reply) return;
+      state.autonomousBusy = true;
+      try {
+        const reply = await window.PrototypeRuntime.autonomous(
+          state.conversation
+        );
+        if (reply) {
+          state.conversation.push({
+            role: "assistant",
+            content: reply,
+          });
+          addMessage("Prototype", reply, "prototype");
+          saveConversation();
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        state.autonomousBusy = false;
+        scheduleNext();
+      }
+    }, state.cooldownMs);
+  };
 
-      state.conversation.push({
-        role: "assistant",
-        content: reply,
-      });
-      addMessage("Prototype", reply, "prototype");
-      saveConversation();
-    } catch (error) {
-      console.error(error);
-    }
-  }, state.cooldownMs);
+  scheduleNext();
 }
 
 function updateIdentityDetails() {
