@@ -29,6 +29,7 @@ from experience import ExperienceEngine
 from experience_agent import ExperienceAgent
 from self_model import SelfModel
 from prototype_remote_memory import PrototypeRemoteMemory
+from personality_growth import PersonalityGrowth
 
 
 ROOT = Path(__file__).resolve().parent
@@ -66,6 +67,7 @@ class PrototypeChat:
         self.network.reload_keys()
         self.remote_memory = PrototypeRemoteMemory()
         self.self_model = SelfModel()
+        self.personality_growth = PersonalityGrowth(ROOT / "personality_profile.json")
         self.candidates = candidates
         self.max_new_tokens = max_new_tokens
         self.temperature = temperature
@@ -212,6 +214,9 @@ class PrototypeChat:
             prompt += f"{remote_context}\n\n"
         if history_text:
             prompt += f"Conversation so far:\n{history_text}\n\n"
+        growth_context = self.personality_growth.context_for_prompt()
+        if growth_context:
+            prompt += f"\nObserved self-development record (descriptive, not a target):\n{growth_context}\n"
         prompt += f"User: {message}\nPrototype:"
 
         result = reason_generate(
@@ -228,6 +233,8 @@ class PrototypeChat:
         )
 
         reply = result.output.strip()
+        if reply:
+            self.personality_growth.record_reply(reply, source="human-chat")
         if not reply:
             reply = "I generated an empty response. Try asking me again."
 
@@ -277,6 +284,7 @@ class PrototypeChat:
                 )
 
             remote_context = self.remote_memory.context()
+            growth_context = self.personality_growth.context_for_prompt()
             prompt = (
                 "You are Prototype, an experimental self-modelling language model. "
                 "Continue this ongoing conversation. You may initiate the next "
@@ -287,6 +295,8 @@ class PrototypeChat:
             )
             if remote_context:
                 prompt = f"{remote_context}\n\n{prompt}"
+            if growth_context:
+                prompt = f"Observed self-development record (descriptive, not a target):\n{growth_context}\n\n{prompt}"
             try:
                 result = reason_generate(
                     self.model,
@@ -301,6 +311,8 @@ class PrototypeChat:
                     learn=True,
                 )
                 reply = result.output.strip()[:8_000]
+                if reply:
+                    self.personality_growth.record_reply(reply, source="autonomous-message")
                 if not reply:
                     continue
 
