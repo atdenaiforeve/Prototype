@@ -51,10 +51,10 @@ class PrototypeChat:
         checkpoint: Path | str = DEFAULT_CHECKPOINT,
         tokenizer: Path | str = DEFAULT_TOKENIZER,
         *,
-        candidates: int = 3,
+        candidates: int = 5,
         max_new_tokens: int | None = None,
-        temperature: float = 0.8,
-        top_k: int = 20,
+        temperature: float = 0.7,
+        top_k: int = 40,
         memory_limit: int = 5,
     ) -> None:
         self.model, self.tokenizer, _ = load_checkpoint(checkpoint, tokenizer)
@@ -71,7 +71,7 @@ class PrototypeChat:
         self.self_model = SelfModel()
         self.personality_growth = PersonalityGrowth(ROOT / "personality_profile.json")
         self.candidates = candidates
-        configured_token_budget = os.environ.get("PROTOTYPE_MAX_NEW_TOKENS", "512")
+        configured_token_budget = os.environ.get("PROTOTYPE_MAX_NEW_TOKENS", "768")
         self.max_new_tokens = (
             max_new_tokens if max_new_tokens is not None
             else max(1, int(configured_token_budget))
