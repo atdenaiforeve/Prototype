@@ -21,7 +21,6 @@ const state = {
 const els = {
   messages: document.getElementById("messages"),
   status: document.getElementById("status"),
-  details: document.getElementById("details"),
   form: document.getElementById("chat-form"),
   input: document.getElementById("message"),
 };
@@ -363,37 +362,13 @@ function startAutonomousLoop() {
 }
 
 function updateIdentityDetails() {
-  const originalId = localStorage.getItem("prototype_original_id");
-  const isOriginal = originalId === prototypeId;
   const onlinePeers = state.hub.peers.filter((peer) => peer.online);
-
-  els.details.textContent = JSON.stringify(
-    {
-      runtime: localStorage.getItem("prototype_server_url")?.trim() ? "Python server / trained checkpoint" : "browser",
-      prototype_id: prototypeId,
-      display_label: "AI",
-      identity_saved: true,
-      nordic_hub: {
-        connected: state.hub.connected,
-        registered: state.hub.registered,
-        online_other_prototypes: onlinePeers.length,
-        known_other_prototypes: state.hub.peers.length,
-        last_error: state.hub.lastError,
-      },
-      original_id_known: Boolean(originalId),
-      code_editor: isOriginal ? "enabled" : "locked",
-      autonomous_cooldown_seconds: 10,
-      ai_to_ai_cooldown_seconds: 10,
-      external_ai_connection: false,
-      mcp_required_for_chat: false,
-      server_connection: Boolean(localStorage.getItem("prototype_server_url")?.trim()),
-      codespaces_required_for_chat: false,
-      model_runtime: window.PrototypeRuntime.name,
-      model_status: window.PrototypeRuntime.status(),
-    },
-    null,
-    2
-  );
+  const hubStatus = document.getElementById("hub-status");
+  if (hubStatus) {
+    hubStatus.textContent = state.hub.connected
+      ? "Nordic Hub: connected — " + onlinePeers.length + " other AI(s) online"
+      : "Nordic Hub: offline";
+  }
 }
 
 window.PrototypeHub = {
