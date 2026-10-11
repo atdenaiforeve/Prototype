@@ -49,9 +49,10 @@ function setStatus(text) {
 }
 
 function saveConversation() {
+  state.conversation = state.conversation.slice(-MAX_SAVED_MESSAGES);
   localStorage.setItem(
     "prototype_conversation",
-    JSON.stringify(state.conversation.slice(-MAX_SAVED_MESSAGES))
+    JSON.stringify(state.conversation)
   );
 }
 
