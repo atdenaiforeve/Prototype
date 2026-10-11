@@ -50,13 +50,13 @@ function setStatus(text) {
   els.status.textContent = "● " + text;
 }
 
-function addSources(sources) {
+function addSources(sources, pagesRead = 0) {
   if (!Array.isArray(sources) || !sources.length) return;
   const section = document.createElement("section");
   section.className = "msg prototype";
   section.setAttribute("aria-label", "Web sources");
   const heading = document.createElement("div");
-  heading.textContent = "Sources Prototype searched:";
+  heading.textContent = "Live web sources" + (Number.isFinite(Number(pagesRead)) ? " · " + Number(pagesRead) + " page(s) read" : "") + ":";
   heading.style.fontWeight = "650";
   heading.style.marginBottom = "6px";
   section.appendChild(heading);
@@ -381,7 +381,7 @@ async function handleChat(event) {
     }
     state.conversation.push({ role: "assistant", content: reply });
     addMessage("Prototype", reply, "prototype");
-    if (webSearch?.used) addSources(webSearch.sources);
+    if (webSearch?.used) addSources(webSearch.sources, webSearch.pages_read);
     saveConversation();
     const usingPython = Boolean(serverUrl);
     setStatus(
