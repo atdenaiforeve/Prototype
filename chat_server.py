@@ -71,7 +71,7 @@ class PrototypeChat:
         self.self_model = SelfModel()
         self.personality_growth = PersonalityGrowth(ROOT / "personality_profile.json")
         self.candidates = candidates
-        configured_token_budget = os.environ.get("PROTOTYPE_MAX_NEW_TOKENS", "768")
+        configured_token_budget = os.environ.get("PROTOTYPE_MAX_NEW_TOKENS", "1024")
         self.max_new_tokens = (
             max_new_tokens if max_new_tokens is not None
             else max(1, int(configured_token_budget))
