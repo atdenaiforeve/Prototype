@@ -52,7 +52,7 @@ class PrototypeChat:
         tokenizer: Path | str = DEFAULT_TOKENIZER,
         *,
         candidates: int = 3,
-        max_new_tokens: int = 512,
+        max_new_tokens: int | None = None,
         temperature: float = 0.8,
         top_k: int = 20,
         memory_limit: int = 5,
@@ -71,7 +71,11 @@ class PrototypeChat:
         self.self_model = SelfModel()
         self.personality_growth = PersonalityGrowth(ROOT / "personality_profile.json")
         self.candidates = candidates
-        self.max_new_tokens = max_new_tokens
+        configured_token_budget = os.environ.get("PROTOTYPE_MAX_NEW_TOKENS", "512")
+        self.max_new_tokens = (
+            max_new_tokens if max_new_tokens is not None
+            else max(1, int(configured_token_budget))
+        )
         self.temperature = temperature
         self.top_k = top_k
         self.memory_limit = memory_limit
