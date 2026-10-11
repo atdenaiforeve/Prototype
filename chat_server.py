@@ -352,6 +352,7 @@ class PrototypeChat:
             "model_loaded": self.model is not None and self.tokenizer is not None,
             "generation": _read_generation(),
             "self_update_frozen": frozen,
+            "personality_growth": self.personality_growth.snapshot(),
             "systems": {
                 "reasoning": True,
                 "memory": self.learning.memory is not None,
