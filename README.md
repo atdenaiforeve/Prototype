@@ -29,7 +29,10 @@ Install the Python dependency set before training or running the neural model:
 
 ```bash
 python -m pip install -r requirements.txt
+python -m playwright install chromium
 ```
+
+The second command installs the Chromium browser used by Prototype's optional live-browser tool. The tool uses a fresh headless browser session (no saved login cookies) and is limited to public HTTP(S) pages. Some sites block automated access or require authentication, and browser interaction is not guaranteed to work on every site.
 
 ## Train Prototype on its curriculum
 
@@ -75,7 +78,7 @@ python chat_server.py
 
 The server binds to `0.0.0.0:8000` so a forwarded Codespaces port can be reached from another device. For a Codespaces deployment, use the public HTTPS URL for port 8000. The GitHub Pages web-live copy is no longer part of the Prototype runtime.
 
-`GET /` reports that the server is online. `GET /status` reports the state of the major Prototype systems. Chat is handled through `POST /chat`.
+`GET /` reports that the server is online. `GET /status` reports the state of the major Prototype systems. Chat is handled through `POST /chat`. The optional live-browser endpoint is `POST /browser/action` with JSON such as `{"action":"read","url":"https://example.com"}`. Supported actions are `open`, `read`, `click`, and `scroll`; `click` also accepts a `target` string containing visible page text. The response includes page title, final URL, visible text, and a bounded list of links. This endpoint is a browser tool foundation; it does not yet mean the chat model autonomously controls every browser action.
 
 The server keeps a short conversation history in memory and sends each message through Prototype's reasoning and memory systems. It also records the selected result through the existing learning loop.
 
