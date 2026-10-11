@@ -353,7 +353,7 @@ async function handleChat(event) {
 }
 
 async function pollServerAutonomousMessages() {
-  const serverUrl = (localStorage.getItem("prototype_server_url") || "").trim().replace(/\\/+$/, "");
+  const serverUrl = (localStorage.getItem("prototype_server_url") || "").trim().replace(/\/+$/, "");
   const conversationId = state.serverConversationId;
   if (!serverUrl || !conversationId || state.serverAutonomousBusy) return;
 
